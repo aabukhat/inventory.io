@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
-import { searchProducts, CAN_SIZES, BOTTLE_SIZES } from '../lib/products'
+import { searchProducts, CAN_SIZES, BOTTLE_SIZES, LIQUOR_UNITS, LIQUOR_UNIT_SIZE_MAP } from '../lib/products'
 
-const TYPES = ['beer', 'seltzer', 'cider', 'other']
+const TYPES = ['beer', 'seltzer', 'cider', 'liquor', 'other']
 
 const s = {
   overlay: {
@@ -58,7 +58,7 @@ const s = {
     fontFamily: 'var(--font-mono)', whiteSpace: 'nowrap',
   },
   typeGrid: {
-    display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px',
+    display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '6px',
   },
   typeBtn: (active) => ({
     padding: '7px 4px', borderRadius: 'var(--radius)',
@@ -124,12 +124,31 @@ export function ItemModal({ item, onSave, onClose }) {
   const [activeSuggestion, setActiveSuggestion] = useState(-1)
   const [showSuggestions, setShowSuggestions] = useState(false)
 
-  const sizes = unit === 'can' ? CAN_SIZES : BOTTLE_SIZES
+  const isLiquor = type === 'liquor'
+  const sizes = isLiquor ? Object.values(LIQUOR_UNIT_SIZE_MAP) : (unit === 'can' ? CAN_SIZES : BOTTLE_SIZES)
 
-  // When unit changes, fall back to 12oz if current size isn't available
+  // When unit or type changes, ensure unitSize is valid for the current context
   useEffect(() => {
-    if (!sizes.includes(unitSize)) setUnitSize('12oz')
-  }, [unit])
+    if (!sizes.includes(unitSize)) setUnitSize(isLiquor ? '750ml' : '12oz')
+  }, [unit, type])
+
+  function handleTypeChange(newType) {
+    setType(newType)
+    if (newType === 'liquor') {
+      setUnit('fifth')
+      setUnitSize('750ml')
+    } else if (isLiquor) {
+      setUnit('can')
+      setUnitSize('12oz')
+    }
+  }
+
+  function handleUnitChange(newUnit) {
+    setUnit(newUnit)
+    if (isLiquor && LIQUOR_UNIT_SIZE_MAP[newUnit]) {
+      setUnitSize(LIQUOR_UNIT_SIZE_MAP[newUnit])
+    }
+  }
 
   function handleNameChange(val) {
     setName(val)
@@ -221,7 +240,7 @@ export function ItemModal({ item, onSave, onClose }) {
           <label style={s.label}>type</label>
           <div style={s.typeGrid}>
             {TYPES.map(t => (
-              <button key={t} style={s.typeBtn(type === t)} onClick={() => setType(t)}>{t}</button>
+              <button key={t} style={s.typeBtn(type === t)} onClick={() => handleTypeChange(t)}>{t}</button>
             ))}
           </div>
         </div>
@@ -236,17 +255,31 @@ export function ItemModal({ item, onSave, onClose }) {
               value={qty}
               onChange={e => setQty(e.target.value)}
             />
-            <div style={s.unitGroup}>
-              <button style={s.unitBtn(unit === 'can')} onClick={() => setUnit('can')}>can</button>
-              <button style={s.unitBtn(unit === 'bottle')} onClick={() => setUnit('bottle')}>bottle</button>
-            </div>
-            <select
-              style={s.sizeSelect}
-              value={unitSize}
-              onChange={e => setUnitSize(e.target.value)}
-            >
-              {sizes.map(sz => <option key={sz} value={sz}>{sz}</option>)}
-            </select>
+            {isLiquor ? (
+              <select
+                style={{ ...s.sizeSelect, flex: 1 }}
+                value={unit}
+                onChange={e => handleUnitChange(e.target.value)}
+              >
+                {LIQUOR_UNITS.map(u => (
+                  <option key={u} value={u}>{u} · {LIQUOR_UNIT_SIZE_MAP[u]}</option>
+                ))}
+              </select>
+            ) : (
+              <>
+                <div style={s.unitGroup}>
+                  <button style={s.unitBtn(unit === 'can')} onClick={() => setUnit('can')}>can</button>
+                  <button style={s.unitBtn(unit === 'bottle')} onClick={() => setUnit('bottle')}>bottle</button>
+                </div>
+                <select
+                  style={s.sizeSelect}
+                  value={unitSize}
+                  onChange={e => setUnitSize(e.target.value)}
+                >
+                  {sizes.map(sz => <option key={sz} value={sz}>{sz}</option>)}
+                </select>
+              </>
+            )}
           </div>
         </div>
 
@@ -267,12 +300,13 @@ export function BulkModal({ onSave, onClose }) {
     const items = rows.map(row => {
       const parts = row.split(',').map(p => p.trim())
       const rawType = (parts[1] || 'beer').toLowerCase()
+      const resolvedType = TYPES.includes(rawType) ? rawType : 'other'
       return {
         name: parts[0] || 'unknown',
-        type: TYPES.includes(rawType) ? rawType : 'other',
+        type: resolvedType,
         quantity: parseInt(parts[2]) || 1,
-        unit: 'can',
-        unit_size: '12oz',
+        unit: resolvedType === 'liquor' ? 'fifth' : 'can',
+        unit_size: resolvedType === 'liquor' ? '750ml' : '12oz',
       }
     })
     if (items.length) onSave(items)

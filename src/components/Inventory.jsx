@@ -6,6 +6,7 @@ const TYPE_COLORS = {
   beer:    { bg: 'rgba(200,245,90,0.12)',  color: '#c8f55a' },
   seltzer: { bg: 'rgba(90,180,245,0.12)', color: '#5ab4f5' },
   cider:   { bg: 'rgba(245,180,90,0.12)', color: '#f5b45a' },
+  liquor:  { bg: 'rgba(180,90,245,0.12)', color: '#b45af5' },
   other:   { bg: 'rgba(180,180,180,0.1)', color: '#aaa' },
 }
 
@@ -262,9 +263,10 @@ export default function Inventory({ user, onSignOut }) {
     return sortDir === 'asc' ? cmp : -cmp
   })
 
-  const totalQty = items.reduce((a, i) => a + (i.quantity || 0), 0)
-  const beerQty  = items.filter(i => i.type === 'beer').reduce((a, i) => a + (i.quantity || 0), 0)
-  const seltzQty = items.filter(i => i.type === 'seltzer').reduce((a, i) => a + (i.quantity || 0), 0)
+  const totalQty  = items.reduce((a, i) => a + (i.quantity || 0), 0)
+  const beerQty   = items.filter(i => i.type === 'beer').reduce((a, i) => a + (i.quantity || 0), 0)
+  const seltzQty  = items.filter(i => i.type === 'seltzer').reduce((a, i) => a + (i.quantity || 0), 0)
+  const liquorQty = items.filter(i => i.type === 'liquor').reduce((a, i) => a + (i.quantity || 0), 0)
 
   return (
     <div style={s.wrap}>
@@ -284,6 +286,7 @@ export default function Inventory({ user, onSignOut }) {
         <div style={s.stat}><div style={s.statLabel}>total units</div><div style={s.statVal}>{totalQty}</div></div>
         <div style={s.stat}><div style={s.statLabel}>beers</div><div style={s.statVal}>{beerQty}</div></div>
         <div style={s.stat}><div style={s.statLabel}>seltzers</div><div style={s.statVal}>{seltzQty}</div></div>
+        <div style={s.stat}><div style={s.statLabel}>liquor</div><div style={s.statVal}>{liquorQty}</div></div>
       </div>
 
       <div style={s.controls}>
@@ -296,6 +299,7 @@ export default function Inventory({ user, onSignOut }) {
           <option value="beer">beer</option>
           <option value="seltzer">seltzer</option>
           <option value="cider">cider</option>
+          <option value="liquor">liquor</option>
           <option value="other">other</option>
         </select>
         <button style={s.btn} onClick={exportCSV}>↓ export</button>
