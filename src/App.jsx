@@ -1,28 +1,27 @@
 import { useState, useEffect } from 'react'
 import Login from './components/Login'
 import Inventory from './components/Inventory'
-import { getSession, clearSession } from './lib/supabase'
+import { supabase } from './lib/supabase'
 
 export default function App() {
   const [user, setUser] = useState(null)
   const [ready, setReady] = useState(false)
 
   useEffect(() => {
-    const session = getSession()
-    if (session) setUser(session)
-    setReady(true)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
+      setUser(session?.user ?? null)
+      setReady(true)
+    })
+    return () => subscription.unsubscribe()
   }, [])
 
-  function handleLogin(user) { setUser(user) }
-
-  function handleSignOut() {
-    clearSession()
-    setUser(null)
+  async function handleSignOut() {
+    await supabase.auth.signOut()
   }
 
   if (!ready) return null
 
   return user
     ? <Inventory user={user} onSignOut={handleSignOut} />
-    : <Login onLogin={handleLogin} />
+    : <Login />
 }

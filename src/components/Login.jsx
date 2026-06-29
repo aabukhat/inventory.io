@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { validatePin, setSession } from '../lib/supabase'
+import { supabase } from '../lib/supabase'
 
 const s = {
   wrap: {
@@ -47,11 +47,12 @@ const s = {
     border: '1px solid var(--border-strong)',
     borderRadius: 'var(--radius)',
     padding: '10px 14px',
-    fontSize: '16px',
-    letterSpacing: '0.2em',
+    fontSize: '15px',
     outline: 'none',
     marginBottom: '1rem',
     transition: 'border-color 0.15s',
+    color: 'var(--text)',
+    boxSizing: 'border-box',
   },
   btn: {
     width: '100%',
@@ -63,53 +64,117 @@ const s = {
     fontWeight: 600,
     fontSize: '14px',
     transition: 'opacity 0.15s',
+    cursor: 'pointer',
   },
-  error: {
+  btnDisabled: {
+    opacity: 0.5,
+    cursor: 'default',
+  },
+  feedback: {
     marginTop: '12px',
     fontSize: '12px',
-    color: 'var(--danger)',
     textAlign: 'center',
+  },
+  toggle: {
+    marginTop: '1.5rem',
+    fontSize: '12px',
+    color: 'var(--text-muted)',
+    textAlign: 'center',
+  },
+  toggleLink: {
+    color: 'var(--accent)',
+    background: 'none',
+    border: 'none',
+    padding: 0,
+    fontSize: '12px',
+    cursor: 'pointer',
+    textDecoration: 'underline',
   },
 }
 
-export default function Login({ onLogin }) {
-  const [pin, setPin] = useState('')
+export default function Login() {
+  const [mode, setMode] = useState('signin') // 'signin' | 'signup'
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
   const [error, setError] = useState('')
+  const [message, setMessage] = useState('')
+  const [loading, setLoading] = useState(false)
 
-  function handleSubmit(e) {
-    e.preventDefault()
-    const user = validatePin(pin)
-    if (!user) {
-      setError('wrong pin — try again')
-      setPin('')
-      return
-    }
-    setSession(user)
-    onLogin(user)
+  function reset() {
+    setError('')
+    setMessage('')
   }
+
+  async function handleSubmit(e) {
+    e.preventDefault()
+    reset()
+    setLoading(true)
+
+    if (mode === 'signin') {
+      const { error } = await supabase.auth.signInWithPassword({ email, password })
+      if (error) setError(error.message)
+    } else {
+      const { error } = await supabase.auth.signUp({ email, password })
+      if (error) setError(error.message)
+      else setMessage('check your email to confirm your account, then sign in')
+    }
+
+    setLoading(false)
+  }
+
+  function switchMode() {
+    setMode(m => m === 'signin' ? 'signup' : 'signin')
+    reset()
+  }
+
+  const isSignUp = mode === 'signup'
 
   return (
     <div style={s.wrap}>
       <div style={s.card}>
         <div style={s.logo}>🍺 cellar</div>
-        <h1 style={s.heading}>enter your pin</h1>
-        <p style={s.sub}>you and your roommate each have one</p>
+        <h1 style={s.heading}>{isSignUp ? 'create account' : 'sign in'}</h1>
+        <p style={s.sub}>{isSignUp ? 'set up your cellar account' : 'welcome back'}</p>
         <form onSubmit={handleSubmit}>
-          <label style={s.label} htmlFor="pin">pin</label>
+          <label style={s.label} htmlFor="email">email</label>
           <input
-            id="pin"
-            type="password"
-            inputMode="numeric"
-            maxLength={8}
-            value={pin}
-            onChange={e => { setPin(e.target.value); setError('') }}
+            id="email"
+            type="email"
+            value={email}
+            onChange={e => { setEmail(e.target.value); reset() }}
             style={s.input}
             autoFocus
-            placeholder="••••"
+            autoComplete="email"
+            placeholder="you@example.com"
+            required
           />
-          <button type="submit" style={s.btn}>sign in</button>
-          {error && <p style={s.error}>{error}</p>}
+          <label style={s.label} htmlFor="password">password</label>
+          <input
+            id="password"
+            type="password"
+            value={password}
+            onChange={e => { setPassword(e.target.value); reset() }}
+            style={s.input}
+            autoComplete={isSignUp ? 'new-password' : 'current-password'}
+            placeholder="••••••••"
+            required
+          />
+          <button
+            type="submit"
+            style={{ ...s.btn, ...(loading ? s.btnDisabled : {}) }}
+            disabled={loading}
+          >
+            {loading ? '…' : isSignUp ? 'create account' : 'sign in'}
+          </button>
+          {error && <p style={{ ...s.feedback, color: 'var(--danger)' }}>{error}</p>}
+          {message && <p style={{ ...s.feedback, color: 'var(--accent)' }}>{message}</p>}
         </form>
+        <p style={s.toggle}>
+          {isSignUp ? 'already have an account? ' : "don't have an account? "}
+          <button style={s.toggleLink} onClick={switchMode}>
+            {isSignUp ? 'sign in' : 'sign up'}
+          </button>
+        </p>
       </div>
     </div>
   )

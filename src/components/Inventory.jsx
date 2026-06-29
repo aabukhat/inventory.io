@@ -141,10 +141,14 @@ export default function Inventory({ user, onSignOut }) {
     return () => supabase.removeChannel(channel)
   }, [load])
 
+  function displayName() {
+    return user.email?.split('@')[0] ?? 'user'
+  }
+
   async function addItem(fields) {
     await supabase.from('drinks').insert({
       ...fields,
-      last_change: `${user.name} added · ${now()}`,
+      last_change: `${displayName()} added · ${now()}`,
     })
     setModal(null)
   }
@@ -152,7 +156,7 @@ export default function Inventory({ user, onSignOut }) {
   async function bulkAdd(rows) {
     const ts = now()
     await supabase.from('drinks').insert(
-      rows.map(r => ({ ...r, last_change: `${user.name} added · ${ts}` }))
+      rows.map(r => ({ ...r, last_change: `${displayName()} added · ${ts}` }))
     )
     setModal(null)
   }
@@ -167,7 +171,7 @@ export default function Inventory({ user, onSignOut }) {
     if (newQty === item.quantity) return
     await supabase.from('drinks').update({
       quantity: newQty,
-      last_change: `${user.name} ${delta > 0 ? '+' : ''}${delta} · ${now()}`,
+      last_change: `${displayName()} ${delta > 0 ? '+' : ''}${delta} · ${now()}`,
     }).eq('id', item.id)
   }
 
@@ -204,7 +208,7 @@ export default function Inventory({ user, onSignOut }) {
       <div style={s.topbar}>
         <div style={s.logo}>🍺 cellar</div>
         <div style={s.userPill}>
-          <span>{user.name}</span>
+          <span>{user.email}</span>
           <button style={s.signOutBtn} onClick={onSignOut}>sign out</button>
         </div>
       </div>
@@ -289,7 +293,7 @@ export default function Inventory({ user, onSignOut }) {
       {modal?.edit && (
         <ItemModal
           item={modal.edit}
-          onSave={fields => updateItem(modal.edit.id, { ...fields, last_change: `${user.name} edited · ${now()}` })}
+          onSave={fields => updateItem(modal.edit.id, { ...fields, last_change: `${displayName()} edited · ${now()}` })}
           onClose={() => setModal(null)}
         />
       )}
