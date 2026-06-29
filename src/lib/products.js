@@ -1,0 +1,118 @@
+export const CAN_SIZES = ['8oz', '10oz', '11oz', '12oz', '14.9oz', '16oz', '19.2oz', '24oz', '25oz', '32oz']
+export const BOTTLE_SIZES = ['7oz', '8oz', '10oz', '11.2oz', '12oz', '14.9oz', '16oz', '22oz', '24oz', '32oz', '40oz']
+
+export const PRODUCTS = [
+  // Modelo
+  { name: 'Modelo Especial',          type: 'beer',    defaultUnit: 'can',    defaultSize: '12oz' },
+  { name: 'Modelo Negra',             type: 'beer',    defaultUnit: 'can',    defaultSize: '12oz' },
+  { name: 'Modelo Chelada',           type: 'beer',    defaultUnit: 'can',    defaultSize: '24oz' },
+  { name: 'Pacifico',                 type: 'beer',    defaultUnit: 'bottle', defaultSize: '12oz' },
+  // Corona
+  { name: 'Corona Extra',             type: 'beer',    defaultUnit: 'bottle', defaultSize: '12oz' },
+  { name: 'Corona Light',             type: 'beer',    defaultUnit: 'bottle', defaultSize: '12oz' },
+  { name: 'Corona Premier',           type: 'beer',    defaultUnit: 'bottle', defaultSize: '12oz' },
+  { name: 'Corona Hard Seltzer Tropical Lime', type: 'seltzer', defaultUnit: 'can', defaultSize: '12oz' },
+  // Heineken
+  { name: 'Heineken',                 type: 'beer',    defaultUnit: 'bottle', defaultSize: '12oz' },
+  { name: 'Heineken Silver',          type: 'beer',    defaultUnit: 'can',    defaultSize: '12oz' },
+  { name: 'Heineken 0.0',             type: 'beer',    defaultUnit: 'can',    defaultSize: '12oz' },
+  // Stella Artois
+  { name: 'Stella Artois',            type: 'beer',    defaultUnit: 'bottle', defaultSize: '11.2oz' },
+  // Dos Equis
+  { name: 'Dos Equis Lager',          type: 'beer',    defaultUnit: 'bottle', defaultSize: '12oz' },
+  { name: 'Dos Equis Ambar',          type: 'beer',    defaultUnit: 'bottle', defaultSize: '12oz' },
+  // Tecate
+  { name: 'Tecate',                   type: 'beer',    defaultUnit: 'can',    defaultSize: '12oz' },
+  { name: 'Tecate Light',             type: 'beer',    defaultUnit: 'can',    defaultSize: '12oz' },
+  // Bud family
+  { name: 'Bud Light',                type: 'beer',    defaultUnit: 'can',    defaultSize: '12oz' },
+  { name: 'Budweiser',                type: 'beer',    defaultUnit: 'can',    defaultSize: '12oz' },
+  { name: 'Bud Light Platinum',       type: 'beer',    defaultUnit: 'can',    defaultSize: '12oz' },
+  { name: 'Bud Light Seltzer Black Cherry', type: 'seltzer', defaultUnit: 'can', defaultSize: '12oz' },
+  { name: 'Bud Light Seltzer Strawberry',   type: 'seltzer', defaultUnit: 'can', defaultSize: '12oz' },
+  // Coors family
+  { name: 'Coors Light',              type: 'beer',    defaultUnit: 'can',    defaultSize: '12oz' },
+  { name: 'Coors Banquet',            type: 'beer',    defaultUnit: 'can',    defaultSize: '12oz' },
+  // Miller family
+  { name: 'Miller Lite',              type: 'beer',    defaultUnit: 'can',    defaultSize: '12oz' },
+  { name: 'Miller High Life',         type: 'beer',    defaultUnit: 'can',    defaultSize: '12oz' },
+  { name: 'Miller Genuine Draft',     type: 'beer',    defaultUnit: 'can',    defaultSize: '12oz' },
+  // Michelob
+  { name: 'Michelob Ultra',           type: 'beer',    defaultUnit: 'can',    defaultSize: '12oz' },
+  { name: 'Michelob Ultra Pure Gold', type: 'beer',    defaultUnit: 'can',    defaultSize: '12oz' },
+  // Busch / PBR / misc macro
+  { name: 'Busch Light',              type: 'beer',    defaultUnit: 'can',    defaultSize: '12oz' },
+  { name: 'Busch',                    type: 'beer',    defaultUnit: 'can',    defaultSize: '12oz' },
+  { name: 'PBR',                      type: 'beer',    defaultUnit: 'can',    defaultSize: '12oz' },
+  { name: 'Keystone Light',           type: 'beer',    defaultUnit: 'can',    defaultSize: '12oz' },
+  { name: 'Natural Light',            type: 'beer',    defaultUnit: 'can',    defaultSize: '12oz' },
+  { name: 'Rolling Rock',             type: 'beer',    defaultUnit: 'bottle', defaultSize: '12oz' },
+  { name: 'Yuengling Lager',          type: 'beer',    defaultUnit: 'can',    defaultSize: '12oz' },
+  { name: 'Yuengling Black & Tan',    type: 'beer',    defaultUnit: 'bottle', defaultSize: '12oz' },
+  { name: 'Shiner Bock',              type: 'beer',    defaultUnit: 'bottle', defaultSize: '12oz' },
+  { name: 'Guinness Draught',         type: 'beer',    defaultUnit: 'can',    defaultSize: '14.9oz' },
+  // Craft
+  { name: 'Sam Adams Boston Lager',   type: 'beer',    defaultUnit: 'bottle', defaultSize: '12oz' },
+  { name: 'Blue Moon Belgian White',  type: 'beer',    defaultUnit: 'bottle', defaultSize: '12oz' },
+  { name: 'Lagunitas IPA',            type: 'beer',    defaultUnit: 'can',    defaultSize: '12oz' },
+  { name: "Lagunitas Little Sumpin'", type: 'beer',    defaultUnit: 'bottle', defaultSize: '12oz' },
+  { name: 'Sierra Nevada Pale Ale',   type: 'beer',    defaultUnit: 'can',    defaultSize: '12oz' },
+  { name: 'Sierra Nevada Torpedo',    type: 'beer',    defaultUnit: 'can',    defaultSize: '12oz' },
+  { name: 'Sierra Nevada Hazy Little Thing', type: 'beer', defaultUnit: 'can', defaultSize: '12oz' },
+  { name: 'Stone IPA',                type: 'beer',    defaultUnit: 'can',    defaultSize: '12oz' },
+  { name: 'Dogfish Head 60 Minute IPA', type: 'beer', defaultUnit: 'bottle', defaultSize: '12oz' },
+  { name: 'Founders All Day IPA',     type: 'beer',    defaultUnit: 'can',    defaultSize: '12oz' },
+  { name: 'Founders Centennial IPA',  type: 'beer',    defaultUnit: 'can',    defaultSize: '12oz' },
+  { name: 'New Belgium Fat Tire',     type: 'beer',    defaultUnit: 'can',    defaultSize: '12oz' },
+  { name: 'Voodoo Ranger IPA',        type: 'beer',    defaultUnit: 'can',    defaultSize: '12oz' },
+  { name: 'Goose Island 312',         type: 'beer',    defaultUnit: 'can',    defaultSize: '12oz' },
+  { name: 'Goose Island IPA',         type: 'beer',    defaultUnit: 'can',    defaultSize: '12oz' },
+  { name: "Bell's Two Hearted Ale",   type: 'beer',    defaultUnit: 'can',    defaultSize: '12oz' },
+  { name: "Bell's Oberon",            type: 'beer',    defaultUnit: 'can',    defaultSize: '12oz' },
+  { name: "Oskar Blues Dale's Pale Ale", type: 'beer', defaultUnit: 'can',   defaultSize: '12oz' },
+  { name: 'Cigar City Jai Alai',      type: 'beer',    defaultUnit: 'can',    defaultSize: '12oz' },
+  { name: 'Deschutes Fresh Squeezed IPA', type: 'beer', defaultUnit: 'can',  defaultSize: '12oz' },
+  { name: 'Firestone 805',            type: 'beer',    defaultUnit: 'can',    defaultSize: '12oz' },
+  { name: 'Firestone Union Jack IPA', type: 'beer',    defaultUnit: 'can',    defaultSize: '12oz' },
+  { name: 'Allagash White',           type: 'beer',    defaultUnit: 'bottle', defaultSize: '12oz' },
+  { name: 'Elysian Space Dust IPA',   type: 'beer',    defaultUnit: 'can',    defaultSize: '12oz' },
+  // White Claw
+  { name: 'White Claw Black Cherry',  type: 'seltzer', defaultUnit: 'can',    defaultSize: '12oz' },
+  { name: 'White Claw Mango',         type: 'seltzer', defaultUnit: 'can',    defaultSize: '12oz' },
+  { name: 'White Claw Natural Lime',  type: 'seltzer', defaultUnit: 'can',    defaultSize: '12oz' },
+  { name: 'White Claw Watermelon',    type: 'seltzer', defaultUnit: 'can',    defaultSize: '12oz' },
+  { name: 'White Claw Raspberry',     type: 'seltzer', defaultUnit: 'can',    defaultSize: '12oz' },
+  { name: 'White Claw Strawberry',    type: 'seltzer', defaultUnit: 'can',    defaultSize: '12oz' },
+  // Truly
+  { name: 'Truly Wild Berry',         type: 'seltzer', defaultUnit: 'can',    defaultSize: '12oz' },
+  { name: 'Truly Lemonade',           type: 'seltzer', defaultUnit: 'can',    defaultSize: '12oz' },
+  { name: 'Truly Tropical',           type: 'seltzer', defaultUnit: 'can',    defaultSize: '12oz' },
+  { name: 'Truly Strawberry Lemonade', type: 'seltzer', defaultUnit: 'can',   defaultSize: '12oz' },
+  // High Noon
+  { name: 'High Noon Peach',          type: 'seltzer', defaultUnit: 'can',    defaultSize: '12oz' },
+  { name: 'High Noon Watermelon',     type: 'seltzer', defaultUnit: 'can',    defaultSize: '12oz' },
+  { name: 'High Noon Pineapple',      type: 'seltzer', defaultUnit: 'can',    defaultSize: '12oz' },
+  { name: 'High Noon Black Cherry',   type: 'seltzer', defaultUnit: 'can',    defaultSize: '12oz' },
+  { name: 'High Noon Grapefruit',     type: 'seltzer', defaultUnit: 'can',    defaultSize: '12oz' },
+  // Other seltzers
+  { name: 'Topo Chico Hard Seltzer',  type: 'seltzer', defaultUnit: 'can',    defaultSize: '12oz' },
+  { name: 'Lone River Ranch Water',   type: 'seltzer', defaultUnit: 'can',    defaultSize: '12oz' },
+  { name: 'Vizzy Hard Seltzer',       type: 'seltzer', defaultUnit: 'can',    defaultSize: '12oz' },
+  // Ciders
+  { name: 'Angry Orchard Crisp Apple', type: 'cider', defaultUnit: 'can',    defaultSize: '12oz' },
+  { name: 'Angry Orchard Green Apple', type: 'cider', defaultUnit: 'can',    defaultSize: '12oz' },
+  { name: 'Angry Orchard Rosé',       type: 'cider', defaultUnit: 'can',    defaultSize: '12oz' },
+  { name: 'Angry Orchard Stone Dry',  type: 'cider', defaultUnit: 'bottle', defaultSize: '12oz' },
+  { name: 'Strongbow Gold Apple',     type: 'cider', defaultUnit: 'can',    defaultSize: '14.9oz' },
+  { name: 'Strongbow Honey & Apple',  type: 'cider', defaultUnit: 'bottle', defaultSize: '12oz' },
+  { name: 'Woodchuck Amber',          type: 'cider', defaultUnit: 'bottle', defaultSize: '12oz' },
+  { name: 'Woodchuck Granny Smith',   type: 'cider', defaultUnit: 'bottle', defaultSize: '12oz' },
+  { name: 'Crispin Original',         type: 'cider', defaultUnit: 'bottle', defaultSize: '12oz' },
+  { name: 'Smith & Forge Hard Cider', type: 'cider', defaultUnit: 'can',    defaultSize: '16oz' },
+]
+
+export function searchProducts(query) {
+  if (!query || query.trim().length < 1) return []
+  const q = query.toLowerCase()
+  return PRODUCTS.filter(p => p.name.toLowerCase().includes(q)).slice(0, 8)
+}

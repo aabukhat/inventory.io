@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { searchProducts, CAN_SIZES, BOTTLE_SIZES } from '../lib/products'
 
 const TYPES = ['beer', 'seltzer', 'cider', 'other']
 
@@ -36,7 +37,25 @@ const s = {
     width: '100%', background: 'var(--surface-2)',
     border: '1px solid var(--border-strong)',
     borderRadius: 'var(--radius)', padding: '9px 12px',
-    fontSize: '14px', outline: 'none',
+    fontSize: '14px', outline: 'none', boxSizing: 'border-box',
+  },
+  autocompleteWrap: { position: 'relative' },
+  suggestionList: {
+    position: 'absolute', top: '100%', left: 0, right: 0,
+    background: 'var(--surface)', border: '1px solid var(--border-strong)',
+    borderRadius: 'var(--radius)', marginTop: '3px',
+    zIndex: 200, overflow: 'hidden',
+    boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+  },
+  suggestionItem: (active) => ({
+    padding: '9px 12px', fontSize: '13px', cursor: 'pointer',
+    background: active ? 'var(--surface-2)' : 'transparent',
+    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+    gap: '8px', transition: 'background 0.08s',
+  }),
+  suggestionMeta: {
+    fontSize: '10px', color: 'var(--text-dim)',
+    fontFamily: 'var(--font-mono)', whiteSpace: 'nowrap',
   },
   typeGrid: {
     display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px',
@@ -49,6 +68,30 @@ const s = {
     fontSize: '12px', fontWeight: active ? 600 : 400,
     textAlign: 'center', cursor: 'pointer', transition: 'all 0.1s',
   }),
+  qtyRow: { display: 'flex', gap: '8px', alignItems: 'stretch' },
+  qtyInput: {
+    width: '72px', background: 'var(--surface-2)',
+    border: '1px solid var(--border-strong)',
+    borderRadius: 'var(--radius)', padding: '9px 12px',
+    fontSize: '14px', outline: 'none', boxSizing: 'border-box',
+    flexShrink: 0,
+  },
+  unitGroup: { display: 'flex', gap: '4px' },
+  unitBtn: (active) => ({
+    padding: '7px 12px', borderRadius: 'var(--radius)',
+    border: `1px solid ${active ? 'var(--accent)' : 'var(--border-strong)'}`,
+    background: active ? 'rgba(200,245,90,0.12)' : 'var(--surface-2)',
+    color: active ? 'var(--accent)' : 'var(--text-muted)',
+    fontSize: '12px', fontWeight: active ? 600 : 400,
+    cursor: 'pointer', transition: 'all 0.1s', whiteSpace: 'nowrap',
+  }),
+  sizeSelect: {
+    flex: 1, background: 'var(--surface-2)',
+    border: '1px solid var(--border-strong)',
+    borderRadius: 'var(--radius)', padding: '9px 10px',
+    fontSize: '13px', outline: 'none', color: 'var(--text)',
+    minWidth: 0,
+  },
   footer: { display: 'flex', gap: '8px', justifyContent: 'flex-end', marginTop: '1.25rem' },
   cancelBtn: {
     padding: '9px 16px', borderRadius: 'var(--radius)',
@@ -74,10 +117,64 @@ export function ItemModal({ item, onSave, onClose }) {
   const [name, setName] = useState(item?.name || '')
   const [type, setType] = useState(item?.type || 'beer')
   const [qty, setQty] = useState(item?.quantity ?? 1)
+  const [unit, setUnit] = useState(item?.unit || 'can')
+  const [unitSize, setUnitSize] = useState(item?.unit_size || '12oz')
+
+  const [suggestions, setSuggestions] = useState([])
+  const [activeSuggestion, setActiveSuggestion] = useState(-1)
+  const [showSuggestions, setShowSuggestions] = useState(false)
+
+  const sizes = unit === 'can' ? CAN_SIZES : BOTTLE_SIZES
+
+  // When unit changes, fall back to 12oz if current size isn't available
+  useEffect(() => {
+    if (!sizes.includes(unitSize)) setUnitSize('12oz')
+  }, [unit])
+
+  function handleNameChange(val) {
+    setName(val)
+    setActiveSuggestion(-1)
+    const results = val.trim().length >= 1 ? searchProducts(val) : []
+    setSuggestions(results)
+    setShowSuggestions(results.length > 0)
+  }
+
+  function selectSuggestion(product) {
+    setName(product.name)
+    setType(product.type)
+    setUnit(product.defaultUnit)
+    setUnitSize(product.defaultSize)
+    setSuggestions([])
+    setShowSuggestions(false)
+  }
+
+  function handleNameKeyDown(e) {
+    if (!showSuggestions) {
+      if (e.key === 'Enter') submit()
+      return
+    }
+    if (e.key === 'ArrowDown') {
+      e.preventDefault()
+      setActiveSuggestion(i => Math.min(i + 1, suggestions.length - 1))
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault()
+      setActiveSuggestion(i => Math.max(i - 1, -1))
+    } else if (e.key === 'Enter') {
+      e.preventDefault()
+      if (activeSuggestion >= 0) selectSuggestion(suggestions[activeSuggestion])
+      else submit()
+    } else if (e.key === 'Escape') {
+      setShowSuggestions(false)
+    }
+  }
+
+  function handleNameBlur() {
+    setTimeout(() => setShowSuggestions(false), 150)
+  }
 
   function submit() {
     if (!name.trim()) return
-    onSave({ name: name.trim(), type, quantity: Number(qty) })
+    onSave({ name: name.trim(), type, quantity: Number(qty), unit, unit_size: unitSize })
   }
 
   return (
@@ -90,12 +187,34 @@ export function ItemModal({ item, onSave, onClose }) {
 
         <div style={s.field}>
           <label style={s.label}>name / brand</label>
-          <input
-            style={s.input} value={name} autoFocus
-            onChange={e => setName(e.target.value)}
-            placeholder="e.g. Lagunitas IPA"
-            onKeyDown={e => e.key === 'Enter' && submit()}
-          />
+          <div style={s.autocompleteWrap}>
+            <input
+              style={s.input}
+              value={name}
+              autoFocus
+              autoComplete="off"
+              onChange={e => handleNameChange(e.target.value)}
+              onKeyDown={handleNameKeyDown}
+              onFocus={() => name.trim().length >= 1 && suggestions.length > 0 && setShowSuggestions(true)}
+              onBlur={handleNameBlur}
+              placeholder="e.g. Modelo Especial"
+            />
+            {showSuggestions && (
+              <div style={s.suggestionList}>
+                {suggestions.map((p, i) => (
+                  <div
+                    key={p.name}
+                    style={s.suggestionItem(i === activeSuggestion)}
+                    onMouseDown={() => selectSuggestion(p)}
+                    onMouseEnter={() => setActiveSuggestion(i)}
+                  >
+                    <span>{p.name}</span>
+                    <span style={s.suggestionMeta}>{p.type} · {p.defaultUnit} · {p.defaultSize}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
         <div style={s.field}>
@@ -109,10 +228,26 @@ export function ItemModal({ item, onSave, onClose }) {
 
         <div style={s.field}>
           <label style={s.label}>quantity</label>
-          <input
-            style={s.input} type="number" min="0"
-            value={qty} onChange={e => setQty(e.target.value)}
-          />
+          <div style={s.qtyRow}>
+            <input
+              style={s.qtyInput}
+              type="number"
+              min="0"
+              value={qty}
+              onChange={e => setQty(e.target.value)}
+            />
+            <div style={s.unitGroup}>
+              <button style={s.unitBtn(unit === 'can')} onClick={() => setUnit('can')}>can</button>
+              <button style={s.unitBtn(unit === 'bottle')} onClick={() => setUnit('bottle')}>bottle</button>
+            </div>
+            <select
+              style={s.sizeSelect}
+              value={unitSize}
+              onChange={e => setUnitSize(e.target.value)}
+            >
+              {sizes.map(sz => <option key={sz} value={sz}>{sz}</option>)}
+            </select>
+          </div>
         </div>
 
         <div style={s.footer}>
@@ -136,6 +271,8 @@ export function BulkModal({ onSave, onClose }) {
         name: parts[0] || 'unknown',
         type: TYPES.includes(rawType) ? rawType : 'other',
         quantity: parseInt(parts[2]) || 1,
+        unit: 'can',
+        unit_size: '12oz',
       }
     })
     if (items.length) onSave(items)

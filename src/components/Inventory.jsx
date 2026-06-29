@@ -218,7 +218,7 @@ export default function Inventory({ user, onSignOut }) {
 
       <div style={s.stats}>
         <div style={s.stat}><div style={s.statLabel}>items</div><div style={s.statVal}>{items.length}</div></div>
-        <div style={s.stat}><div style={s.statLabel}>total cans</div><div style={s.statVal}>{totalQty}</div></div>
+        <div style={s.stat}><div style={s.statLabel}>total units</div><div style={s.statVal}>{totalQty}</div></div>
         <div style={s.stat}><div style={s.statLabel}>beers</div><div style={s.statVal}>{beerQty}</div></div>
         <div style={s.stat}><div style={s.statLabel}>seltzers</div><div style={s.statVal}>{seltzQty}</div></div>
       </div>
@@ -266,7 +266,14 @@ export default function Inventory({ user, onSignOut }) {
                   <td style={s.td}>
                     <div style={s.qtyCtrl}>
                       <button style={s.qtyBtn} onClick={() => adjustQty(item, -1)} aria-label="decrease">−</button>
-                      <span style={s.qtyNum}>{item.quantity}</span>
+                      <div style={{ textAlign: 'center', minWidth: '32px' }}>
+                        <div style={s.qtyNum}>{item.quantity}</div>
+                        {item.unit && item.unit_size && (
+                          <div style={{ fontSize: '10px', color: 'var(--text-dim)', fontFamily: 'var(--font-mono)', marginTop: '2px', whiteSpace: 'nowrap' }}>
+                            {item.unit_size} {item.unit}
+                          </div>
+                        )}
+                      </div>
                       <button style={s.qtyBtn} onClick={() => adjustQty(item, 1)} aria-label="increase">+</button>
                     </div>
                   </td>
