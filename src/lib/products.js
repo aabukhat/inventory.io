@@ -2294,6 +2294,13 @@ export const PRODUCTS = [
   { name: "Rumhaven",                                           type: 'liquor',  defaultUnit: 'fifth',       defaultSize: '750ml' },
   { name: "Worthy Park Overproof Rum",                          type: 'liquor',  defaultUnit: 'fifth',       defaultSize: '750ml' },
   { name: "Wray & Nephew White Overproof Rum",                  type: 'liquor',  defaultUnit: 'fifth',       defaultSize: '750ml' },
+  // Manual additions (not in Iowa dataset)
+  { name: "Claude Chatelier",                                   type: 'liquor',  defaultUnit: 'fifth',       defaultSize: '750ml' },
+  { name: "Haddad Arak",                                        type: 'liquor',  defaultUnit: 'fifth',       defaultSize: '750ml' },
+  { name: "Los Cabos Margarita Mix",                            type: 'liquor',  defaultUnit: 'handle',      defaultSize: '1.75L' },
+  { name: "Pierre Duchene",                                     type: 'liquor',  defaultUnit: 'fifth',       defaultSize: '750ml' },
+  { name: "Terralta Tequila",                                   type: 'liquor',  defaultUnit: 'fifth',       defaultSize: '750ml' },
+  { name: "Trader Joe's Kentucky Bourbon",                      type: 'liquor',  defaultUnit: 'fifth',       defaultSize: '750ml' },
   // END:liquor
 ]
 
