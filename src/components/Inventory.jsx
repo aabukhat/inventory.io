@@ -143,28 +143,37 @@ export default function Inventory({ user, onSignOut }) {
 
   // realtime sync
   useEffect(() => {
-    const channel = supabase
-      .channel('drinks-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'drinks' }, (payload) => {
-        if (payload.eventType === 'INSERT') {
-          const row = payload.new
-          setItems(prev => [...prev, row].sort((a, b) => a.name.localeCompare(b.name)))
-          setFadingIn(prev => new Set(prev).add(row.id))
-          setTimeout(() => setFadingIn(prev => { const n = new Set(prev); n.delete(row.id); return n }), 500)
-        } else if (payload.eventType === 'UPDATE') {
-          const row = payload.new
-          setItems(prev => prev.map(item => item.id === row.id ? row : item))
-        } else if (payload.eventType === 'DELETE') {
-          const row = payload.old
-          setItems(prev => prev.filter(item => item.id !== row.id))
-        }
-      })
-      .subscribe((status, err) => {
-        if (status === 'CHANNEL_ERROR') console.error('[realtime] channel error', err)
-        if (status === 'TIMED_OUT') console.warn('[realtime] timed out')
-        if (status === 'CLOSED') console.warn('[realtime] closed')
-      })
-    return () => supabase.removeChannel(channel)
+    let channel
+
+    async function subscribe() {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session?.access_token) supabase.realtime.setAuth(session.access_token)
+
+      channel = supabase
+        .channel('drinks-changes')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'drinks' }, (payload) => {
+          if (payload.eventType === 'INSERT') {
+            const row = payload.new
+            setItems(prev => [...prev, row].sort((a, b) => a.name.localeCompare(b.name)))
+            setFadingIn(prev => new Set(prev).add(row.id))
+            setTimeout(() => setFadingIn(prev => { const n = new Set(prev); n.delete(row.id); return n }), 500)
+          } else if (payload.eventType === 'UPDATE') {
+            const row = payload.new
+            setItems(prev => prev.map(item => item.id === row.id ? row : item))
+          } else if (payload.eventType === 'DELETE') {
+            const row = payload.old
+            setItems(prev => prev.filter(item => item.id !== row.id))
+          }
+        })
+        .subscribe((status, err) => {
+          if (status === 'CHANNEL_ERROR') console.error('[realtime] channel error', err)
+          if (status === 'TIMED_OUT') console.warn('[realtime] timed out')
+          if (status === 'CLOSED') console.warn('[realtime] closed')
+        })
+    }
+
+    subscribe()
+    return () => { if (channel) supabase.removeChannel(channel) }
   }, [])
 
   function displayName() {
