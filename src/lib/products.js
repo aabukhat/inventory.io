@@ -87,6 +87,7 @@ export const PRODUCTS = [
   { name: 'White Claw Pineapple',          type: 'seltzer', defaultUnit: 'can', defaultSize: '12oz' },
   { name: 'White Claw Peach',              type: 'seltzer', defaultUnit: 'can', defaultSize: '12oz' },
   { name: 'White Claw Cranberry',          type: 'seltzer', defaultUnit: 'can', defaultSize: '12oz' },
+  { name: 'White Claw Ruby Grapefruit',   type: 'seltzer', defaultUnit: 'can', defaultSize: '12oz' },
   { name: 'White Claw Surge Cranberry',    type: 'seltzer', defaultUnit: 'can', defaultSize: '16oz' },
   { name: 'White Claw Surge Lime',         type: 'seltzer', defaultUnit: 'can', defaultSize: '16oz' },
   { name: 'White Claw Surge Blood Orange', type: 'seltzer', defaultUnit: 'can', defaultSize: '16oz' },
@@ -150,6 +151,9 @@ export const PRODUCTS = [
   { name: 'Topo Chico Hard Seltzer Piña Fresca',       type: 'seltzer', defaultUnit: 'can', defaultSize: '12oz' },
   { name: 'Topo Chico Hard Seltzer Limon',             type: 'seltzer', defaultUnit: 'can', defaultSize: '12oz' },
   { name: 'Topo Chico Hard Seltzer Strawberry Hibiscus', type: 'seltzer', defaultUnit: 'can', defaultSize: '12oz' },
+  { name: 'Topo Chico Hard Seltzer Exotic Pineapple',   type: 'seltzer', defaultUnit: 'can', defaultSize: '12oz' },
+  { name: 'Topo Chico Hard Seltzer Oasis Cherry',       type: 'seltzer', defaultUnit: 'can', defaultSize: '12oz' },
+  { name: 'Topo Chico Hard Seltzer Prickly Pear',       type: 'seltzer', defaultUnit: 'can', defaultSize: '12oz' },
   // Lone River Ranch Water
   { name: 'Lone River Ranch Water Original',      type: 'seltzer', defaultUnit: 'can', defaultSize: '12oz' },
   { name: 'Lone River Ranch Water Grapefruit',    type: 'seltzer', defaultUnit: 'can', defaultSize: '12oz' },
