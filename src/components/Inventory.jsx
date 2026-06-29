@@ -159,7 +159,11 @@ export default function Inventory({ user, onSignOut }) {
           setItems(prev => prev.filter(item => item.id !== row.id))
         }
       })
-      .subscribe()
+      .subscribe((status, err) => {
+        if (status === 'CHANNEL_ERROR') console.error('[realtime] channel error', err)
+        if (status === 'TIMED_OUT') console.warn('[realtime] timed out')
+        if (status === 'CLOSED') console.warn('[realtime] closed')
+      })
     return () => supabase.removeChannel(channel)
   }, [])
 
