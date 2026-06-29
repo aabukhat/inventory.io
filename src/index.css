@@ -34,6 +34,22 @@ input, select, textarea, button {
 
 button { cursor: pointer; }
 
+/* row animations */
+@keyframes row-pop-in {
+  0%   { opacity: 0; transform: scale(0.97) translateY(8px); background: rgba(200, 245, 90, 0); }
+  40%  { opacity: 1; transform: scale(1.02);                 background: rgba(200, 245, 90, 0.12); }
+  100% { opacity: 1; transform: scale(1);                    background: rgba(200, 245, 90, 0); }
+}
+
+@keyframes row-pop-out {
+  0%   { opacity: 1; transform: scale(1); }
+  18%  { opacity: 1; transform: scale(1.02); }
+  100% { opacity: 0; transform: scale(0.95) translateY(-6px); }
+}
+
+tr.row-pop-in  { animation: row-pop-in  0.45s ease-out forwards; }
+tr.row-pop-out { animation: row-pop-out 0.45s ease-out forwards; pointer-events: none; }
+
 /* scrollbar */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }

@@ -120,6 +120,8 @@ export default function Inventory({ user, onSignOut }) {
   const [search, setSearch] = useState('')
   const [filterType, setFilterType] = useState('')
   const [modal, setModal] = useState(null) // null | 'add' | 'bulk' | {edit: item}
+  const [fadingOut, setFadingOut] = useState(new Set())
+  const [fadingIn, setFadingIn] = useState(new Set())
 
   const load = useCallback(async () => {
     const { data, error } = await supabase
@@ -136,10 +138,20 @@ export default function Inventory({ user, onSignOut }) {
   useEffect(() => {
     const channel = supabase
       .channel('drinks-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'drinks' }, () => load())
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'drinks' }, ({ new: row }) => {
+        setItems(prev => [...prev, row].sort((a, b) => a.name.localeCompare(b.name)))
+        setFadingIn(prev => new Set(prev).add(row.id))
+        setTimeout(() => setFadingIn(prev => { const n = new Set(prev); n.delete(row.id); return n }), 500)
+      })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'drinks' }, ({ new: row }) => {
+        setItems(prev => prev.map(item => item.id === row.id ? row : item))
+      })
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'drinks' }, ({ old: row }) => {
+        setItems(prev => prev.filter(item => item.id !== row.id))
+      })
       .subscribe()
     return () => supabase.removeChannel(channel)
-  }, [load])
+  }, [])
 
   function displayName() {
     return user.email?.split('@')[0] ?? 'user'
@@ -169,6 +181,11 @@ export default function Inventory({ user, onSignOut }) {
   async function adjustQty(item, delta) {
     const newQty = Math.max(0, item.quantity + delta)
     if (newQty === item.quantity) return
+    if (newQty === 0) {
+      setFadingOut(prev => new Set(prev).add(item.id))
+      setTimeout(() => supabase.from('drinks').delete().eq('id', item.id), 450)
+      return
+    }
     await supabase.from('drinks').update({
       quantity: newQty,
       last_change: `${displayName()} ${delta > 0 ? '+' : ''}${delta} · ${now()}`,
@@ -260,7 +277,7 @@ export default function Inventory({ user, onSignOut }) {
                   {items.length === 0 ? 'no items yet — add some above' : 'no matches'}
                 </td></tr>
               ) : filtered.map((item, idx) => (
-                <tr key={item.id} style={idx === filtered.length - 1 ? { } : {}}>
+                <tr key={item.id} className={fadingOut.has(item.id) ? 'row-pop-out' : fadingIn.has(item.id) ? 'row-pop-in' : undefined} style={idx === filtered.length - 1 ? { } : {}}>
                   <td style={{ ...s.td, fontWeight: 500 }}>{item.name}</td>
                   <td style={s.td}><span style={s.badge(item.type)}>{item.type}</span></td>
                   <td style={s.td}>
