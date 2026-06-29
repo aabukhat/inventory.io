@@ -122,6 +122,13 @@ export default function Inventory({ user, onSignOut }) {
   const [modal, setModal] = useState(null) // null | 'add' | 'bulk' | {edit: item}
   const [fadingOut, setFadingOut] = useState(new Set())
   const [fadingIn, setFadingIn] = useState(new Set())
+  const [sortCol, setSortCol] = useState('name')
+  const [sortDir, setSortDir] = useState('asc')
+
+  function handleSort(col) {
+    if (sortCol === col) setSortDir(d => d === 'asc' ? 'desc' : 'asc')
+    else { setSortCol(col); setSortDir('asc') }
+  }
 
   const load = useCallback(async () => {
     const { data, error } = await supabase
@@ -138,16 +145,19 @@ export default function Inventory({ user, onSignOut }) {
   useEffect(() => {
     const channel = supabase
       .channel('drinks-changes')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'drinks' }, ({ new: row }) => {
-        setItems(prev => [...prev, row].sort((a, b) => a.name.localeCompare(b.name)))
-        setFadingIn(prev => new Set(prev).add(row.id))
-        setTimeout(() => setFadingIn(prev => { const n = new Set(prev); n.delete(row.id); return n }), 500)
-      })
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'drinks' }, ({ new: row }) => {
-        setItems(prev => prev.map(item => item.id === row.id ? row : item))
-      })
-      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'drinks' }, ({ old: row }) => {
-        setItems(prev => prev.filter(item => item.id !== row.id))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'drinks' }, (payload) => {
+        if (payload.eventType === 'INSERT') {
+          const row = payload.new
+          setItems(prev => [...prev, row].sort((a, b) => a.name.localeCompare(b.name)))
+          setFadingIn(prev => new Set(prev).add(row.id))
+          setTimeout(() => setFadingIn(prev => { const n = new Set(prev); n.delete(row.id); return n }), 500)
+        } else if (payload.eventType === 'UPDATE') {
+          const row = payload.new
+          setItems(prev => prev.map(item => item.id === row.id ? row : item))
+        } else if (payload.eventType === 'DELETE') {
+          const row = payload.old
+          setItems(prev => prev.filter(item => item.id !== row.id))
+        }
       })
       .subscribe()
     return () => supabase.removeChannel(channel)
@@ -183,7 +193,10 @@ export default function Inventory({ user, onSignOut }) {
     if (newQty === item.quantity) return
     if (newQty === 0) {
       setFadingOut(prev => new Set(prev).add(item.id))
-      setTimeout(() => supabase.from('drinks').delete().eq('id', item.id), 450)
+      setTimeout(async () => {
+        setItems(prev => prev.filter(i => i.id !== item.id))
+        await supabase.from('drinks').delete().eq('id', item.id)
+      }, 450)
       return
     }
     await supabase.from('drinks').update({
@@ -216,6 +229,26 @@ export default function Inventory({ user, onSignOut }) {
     return (!q || i.name.toLowerCase().includes(q)) && (!filterType || i.type === filterType)
   })
 
+  function parseLastChange(str) {
+    if (!str) return 0
+    const after = str.split('·').pop()?.trim()
+    if (!after) return 0
+    const year = new Date().getFullYear()
+    return new Date(after.replace(',', `, ${year}`)).getTime() || 0
+  }
+
+  const displayed = [...filtered].sort((a, b) => {
+    let cmp
+    if (sortCol === 'quantity') {
+      cmp = (a.quantity ?? 0) - (b.quantity ?? 0)
+    } else if (sortCol === 'last_change') {
+      cmp = parseLastChange(a.last_change) - parseLastChange(b.last_change)
+    } else {
+      cmp = (a[sortCol] ?? '').toString().toLowerCase().localeCompare((b[sortCol] ?? '').toString().toLowerCase())
+    }
+    return sortDir === 'asc' ? cmp : -cmp
+  })
+
   const totalQty = items.reduce((a, i) => a + (i.quantity || 0), 0)
   const beerQty  = items.filter(i => i.type === 'beer').reduce((a, i) => a + (i.quantity || 0), 0)
   const seltzQty = items.filter(i => i.type === 'seltzer').reduce((a, i) => a + (i.quantity || 0), 0)
@@ -223,7 +256,7 @@ export default function Inventory({ user, onSignOut }) {
   return (
     <div style={s.wrap}>
       <div style={s.topbar}>
-        <div style={s.logo}>🍺 cellar</div>
+        <div style={s.logo}>🧺 inventory.io</div>
         <div style={s.userPill}>
           <span>{user.email}</span>
           <button style={s.signOutBtn} onClick={onSignOut}>sign out</button>
@@ -231,7 +264,7 @@ export default function Inventory({ user, onSignOut }) {
       </div>
 
       <h1 style={s.heading}>drink inventory</h1>
-      <p style={s.sub}>shared with your roommate · updates live</p>
+      <p style={s.sub}>updates live</p>
 
       <div style={s.stats}>
         <div style={s.stat}><div style={s.statLabel}>items</div><div style={s.statVal}>{items.length}</div></div>
@@ -264,20 +297,28 @@ export default function Inventory({ user, onSignOut }) {
           <table style={s.table}>
             <thead>
               <tr>
-                <th style={s.th}>name / brand</th>
-                <th style={s.th}>type</th>
-                <th style={{ ...s.th, width: '130px' }}>quantity</th>
-                <th style={s.th}>last change</th>
+                {[['name', 'name / brand'], ['type', 'type'], ['quantity', 'quantity'], ['last_change', 'last change']].map(([col, label]) => (
+                  <th
+                    key={col}
+                    style={{ ...s.th, cursor: 'pointer', userSelect: 'none', width: col === 'quantity' ? '130px' : undefined }}
+                    onClick={() => handleSort(col)}
+                  >
+                    {label}{' '}
+                    <span style={{ opacity: sortCol === col ? 1 : 0.25, fontFamily: 'var(--font-sans)', letterSpacing: 0 }}>
+                      {sortCol === col ? (sortDir === 'asc' ? '↑' : '↓') : '↕'}
+                    </span>
+                  </th>
+                ))}
                 <th style={{ ...s.th, width: '80px' }}></th>
               </tr>
             </thead>
             <tbody>
-              {filtered.length === 0 ? (
+              {displayed.length === 0 ? (
                 <tr><td colSpan={5} style={s.empty}>
                   {items.length === 0 ? 'no items yet — add some above' : 'no matches'}
                 </td></tr>
-              ) : filtered.map((item, idx) => (
-                <tr key={item.id} className={fadingOut.has(item.id) ? 'row-pop-out' : fadingIn.has(item.id) ? 'row-pop-in' : undefined} style={idx === filtered.length - 1 ? { } : {}}>
+              ) : displayed.map((item, idx) => (
+                <tr key={item.id} className={fadingOut.has(item.id) ? 'row-pop-out' : fadingIn.has(item.id) ? 'row-pop-in' : undefined} style={idx === displayed.length - 1 ? { } : {}}>
                   <td style={{ ...s.td, fontWeight: 500 }}>{item.name}</td>
                   <td style={s.td}><span style={s.badge(item.type)}>{item.type}</span></td>
                   <td style={s.td}>
