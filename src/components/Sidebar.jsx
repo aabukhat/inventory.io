@@ -138,9 +138,9 @@ export default function Sidebar({ inventories, activeInventory, onSelectInventor
             {initials(inv.name)}
           </div>
         ))}
-      </div>
 
-      <button style={s.addBtn} onClick={openCreate} title="new shared inventory">+</button>
+        <button style={s.addBtn} onClick={openCreate} title="new shared inventory">+</button>
+      </div>
 
       {creating && (
         <div style={s.overlay} onClick={e => e.target === e.currentTarget && closeCreate()}>
