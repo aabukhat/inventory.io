@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { listMyInventories } from '../lib/inventories'
+import { supabase } from '../lib/supabase'
 
 const STORAGE_KEY = 'inventory.io:activeInventoryId'
 
@@ -22,6 +23,32 @@ export function useInventories(user) {
   }, [user])
 
   useEffect(() => { refresh() }, [refresh])
+
+  // Live-refresh when the user's own membership changes elsewhere (e.g. an
+  // owner revokes their access, or invites them to a new inventory) so the
+  // sidebar updates without requiring a logout/login or page reload.
+  useEffect(() => {
+    if (!user) return
+    let channel
+
+    async function subscribe() {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session?.access_token) supabase.realtime.setAuth(session.access_token)
+
+      channel = supabase
+        .channel(`membership-changes-${user.id}`)
+        .on('postgres_changes', {
+          event: '*', schema: 'public', table: 'inventory_members',
+          filter: `user_id=eq.${user.id}`,
+        }, () => { refresh() })
+        .subscribe((status, err) => {
+          if (status === 'CHANNEL_ERROR') console.error('[realtime] channel error', err)
+        })
+    }
+
+    subscribe()
+    return () => { if (channel) supabase.removeChannel(channel) }
+  }, [user, refresh])
 
   useEffect(() => {
     if (activeInventoryId) localStorage.setItem(STORAGE_KEY, activeInventoryId)

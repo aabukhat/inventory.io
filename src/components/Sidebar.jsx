@@ -19,9 +19,16 @@ const s = {
     transition: 'all 0.1s',
   }),
   divider: { width: '32px', height: '1px', background: 'var(--border-strong)', flexShrink: 0 },
+  subDivider: { width: '20px', height: '1px', background: 'var(--border)', flexShrink: 0, margin: '2px 0' },
   sharedList: {
     display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px',
     overflowY: 'auto', flex: 1, width: '100%',
+  },
+  circleWrap: { position: 'relative', flexShrink: 0 },
+  memberBadge: {
+    position: 'absolute', bottom: '-2px', right: '-2px',
+    width: '10px', height: '10px', borderRadius: '50%',
+    background: 'var(--text-dim)', border: '2px solid var(--surface)',
   },
   addBtn: {
     width: '40px', height: '40px', borderRadius: '50%', flexShrink: 0,
@@ -81,6 +88,8 @@ export default function Sidebar({ inventories, activeInventory, onSelectInventor
 
   const personal = inventories.find(i => i.type === 'personal')
   const shared = inventories.filter(i => i.type === 'shared')
+  const ownedShared = shared.filter(i => i.role === 'owner')
+  const memberShared = shared.filter(i => i.role !== 'owner')
 
   function openCreate() {
     setError('')
@@ -128,14 +137,29 @@ export default function Sidebar({ inventories, activeInventory, onSelectInventor
       <div style={s.divider} />
 
       <div style={s.sharedList}>
-        {shared.map(inv => (
+        {ownedShared.map(inv => (
           <div
             key={inv.id}
             style={s.circle(activeInventory?.id === inv.id)}
             onClick={() => onSelectInventory(inv.id)}
-            title={inv.name}
+            title={`${inv.name} — owned by you`}
           >
             {initials(inv.name)}
+          </div>
+        ))}
+
+        {ownedShared.length > 0 && memberShared.length > 0 && <div style={s.subDivider} />}
+
+        {memberShared.map(inv => (
+          <div key={inv.id} style={s.circleWrap}>
+            <div
+              style={s.circle(activeInventory?.id === inv.id)}
+              onClick={() => onSelectInventory(inv.id)}
+              title={`${inv.name} — shared with you (${inv.role})`}
+            >
+              {initials(inv.name)}
+            </div>
+            <span style={s.memberBadge} />
           </div>
         ))}
 
