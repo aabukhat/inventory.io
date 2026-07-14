@@ -302,7 +302,7 @@ export default function Inventory({ user, inventory, onSignOut, onInventoryChang
       <div style={s.headingRow}>
         <h1 style={s.heading}>{inventory.name}</h1>
         {inventory.type === 'shared' && canManageMembers(role) && (
-          <button style={s.manageBtn} onClick={() => setManagingMembers(true)}>manage members</button>
+          <button style={s.manageBtn} onClick={() => setManagingMembers(true)}>manage</button>
         )}
       </div>
       <p style={s.sub}>updates live</p>
