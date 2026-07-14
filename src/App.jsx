@@ -1,11 +1,16 @@
 import { useState, useEffect } from 'react'
 import Login from './components/Login'
 import Inventory from './components/Inventory'
+import Sidebar from './components/Sidebar'
 import { supabase } from './lib/supabase'
+import { useInventories } from './hooks/useInventories'
 
 export default function App() {
   const [user, setUser] = useState(null)
   const [ready, setReady] = useState(false)
+  const {
+    inventories, activeInventory, setActiveInventoryId, refresh, loading: inventoriesLoading,
+  } = useInventories(user)
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
@@ -19,9 +24,31 @@ export default function App() {
     await supabase.auth.signOut()
   }
 
-  if (!ready) return null
+  async function handleInventoryCreated(id) {
+    await refresh()
+    setActiveInventoryId(id)
+  }
 
-  return user
-    ? <Inventory user={user} onSignOut={handleSignOut} />
-    : <Login />
+  if (!ready) return null
+  if (!user) return <Login />
+  if (inventoriesLoading || !activeInventory) return null
+
+  return (
+    <div style={{ display: 'flex' }}>
+      <Sidebar
+        inventories={inventories}
+        activeInventory={activeInventory}
+        onSelectInventory={setActiveInventoryId}
+        onInventoryCreated={handleInventoryCreated}
+      />
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <Inventory
+          user={user}
+          inventory={activeInventory}
+          onSignOut={handleSignOut}
+          onInventoryChanged={refresh}
+        />
+      </div>
+    </div>
+  )
 }

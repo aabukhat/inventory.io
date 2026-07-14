@@ -1,6 +1,10 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import { ItemModal, BulkModal } from './Modals'
+import MembersModal from './MembersModal'
+import {
+  canAddItems, canIncreaseQty, canDecreaseQty, canEditDetails, canDeleteItems, canManageMembers,
+} from '../lib/permissions'
 
 const TYPE_COLORS = {
   beer:    { bg: 'rgba(200,245,90,0.12)',  color: '#c8f55a' },
@@ -29,7 +33,15 @@ const s = {
     borderRadius: '4px', padding: '3px 8px', fontSize: '11px',
     color: 'var(--text-dim)', cursor: 'pointer',
   },
-  heading: { fontSize: '22px', fontWeight: 600, marginBottom: '0.25rem' },
+  headingRow: {
+    display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '0.25rem',
+  },
+  heading: { fontSize: '22px', fontWeight: 600 },
+  manageBtn: {
+    background: 'none', border: '1px solid var(--border-strong)',
+    borderRadius: 'var(--radius)', padding: '4px 10px', fontSize: '12px',
+    color: 'var(--text-muted)',
+  },
   sub: { color: 'var(--text-muted)', fontSize: '13px', marginBottom: '1.5rem' },
   stats: {
     display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
@@ -115,16 +127,19 @@ const s = {
   },
 }
 
-export default function Inventory({ user, onSignOut }) {
+export default function Inventory({ user, inventory, onSignOut, onInventoryChanged }) {
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [filterType, setFilterType] = useState('')
   const [modal, setModal] = useState(null) // null | 'add' | 'bulk' | {edit: item}
+  const [managingMembers, setManagingMembers] = useState(false)
   const [fadingOut, setFadingOut] = useState(new Set())
   const [fadingIn, setFadingIn] = useState(new Set())
   const [sortCol, setSortCol] = useState('name')
   const [sortDir, setSortDir] = useState('asc')
+
+  const role = inventory.role
 
   function handleSort(col) {
     if (sortCol === col) setSortDir(d => d === 'asc' ? 'desc' : 'asc')
@@ -132,13 +147,15 @@ export default function Inventory({ user, onSignOut }) {
   }
 
   const load = useCallback(async () => {
+    setLoading(true)
     const { data, error } = await supabase
       .from('drinks')
       .select('*')
+      .eq('inventory_id', inventory.id)
       .order('name')
     if (!error) setItems(data || [])
     setLoading(false)
-  }, [])
+  }, [inventory.id])
 
   useEffect(() => { load() }, [load])
 
@@ -151,8 +168,11 @@ export default function Inventory({ user, onSignOut }) {
       if (session?.access_token) supabase.realtime.setAuth(session.access_token)
 
       channel = supabase
-        .channel('drinks-changes')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'drinks' }, (payload) => {
+        .channel(`drinks-changes-${inventory.id}`)
+        .on('postgres_changes', {
+          event: '*', schema: 'public', table: 'drinks',
+          filter: `inventory_id=eq.${inventory.id}`,
+        }, (payload) => {
           if (payload.eventType === 'INSERT') {
             const row = payload.new
             setItems(prev => [...prev, row].sort((a, b) => a.name.localeCompare(b.name)))
@@ -175,7 +195,7 @@ export default function Inventory({ user, onSignOut }) {
 
     subscribe()
     return () => { if (channel) supabase.removeChannel(channel) }
-  }, [])
+  }, [inventory.id])
 
   function displayName() {
     return user.email?.split('@')[0] ?? 'user'
@@ -184,6 +204,7 @@ export default function Inventory({ user, onSignOut }) {
   async function addItem(fields) {
     await supabase.from('drinks').insert({
       ...fields,
+      inventory_id: inventory.id,
       last_change: `${displayName()} added · ${now()}`,
     })
     setModal(null)
@@ -192,7 +213,7 @@ export default function Inventory({ user, onSignOut }) {
   async function bulkAdd(rows) {
     const ts = now()
     await supabase.from('drinks').insert(
-      rows.map(r => ({ ...r, last_change: `${displayName()} added · ${ts}` }))
+      rows.map(r => ({ ...r, inventory_id: inventory.id, last_change: `${displayName()} added · ${ts}` }))
     )
     setModal(null)
   }
@@ -278,7 +299,12 @@ export default function Inventory({ user, onSignOut }) {
         </div>
       </div>
 
-      <h1 style={s.heading}>drink inventory</h1>
+      <div style={s.headingRow}>
+        <h1 style={s.heading}>{inventory.name}</h1>
+        {inventory.type === 'shared' && canManageMembers(role) && (
+          <button style={s.manageBtn} onClick={() => setManagingMembers(true)}>manage members</button>
+        )}
+      </div>
       <p style={s.sub}>updates live</p>
 
       <div style={s.stats}>
@@ -303,8 +329,12 @@ export default function Inventory({ user, onSignOut }) {
           <option value="other">other</option>
         </select>
         <button style={s.btn} onClick={exportCSV}>↓ export</button>
-        <button style={s.btn} onClick={() => setModal('bulk')}>≡ bulk add</button>
-        <button style={s.primaryBtn} onClick={() => setModal('add')}>+ add item</button>
+        {canAddItems(role) && (
+          <>
+            <button style={s.btn} onClick={() => setModal('bulk')}>≡ bulk add</button>
+            <button style={s.primaryBtn} onClick={() => setModal('add')}>+ add item</button>
+          </>
+        )}
       </div>
 
       <div style={s.tableWrap}>
@@ -340,7 +370,9 @@ export default function Inventory({ user, onSignOut }) {
                   <td style={s.td}><span style={s.badge(item.type)}>{item.type}</span></td>
                   <td style={s.td}>
                     <div style={s.qtyCtrl}>
-                      <button style={s.qtyBtn} onClick={() => adjustQty(item, -1)} aria-label="decrease">−</button>
+                      {canDecreaseQty(role) && (
+                        <button style={s.qtyBtn} onClick={() => adjustQty(item, -1)} aria-label="decrease">−</button>
+                      )}
                       <div style={{ textAlign: 'center', minWidth: '32px' }}>
                         <div style={s.qtyNum}>{item.quantity}</div>
                         {item.unit && item.unit_size && (
@@ -349,15 +381,21 @@ export default function Inventory({ user, onSignOut }) {
                           </div>
                         )}
                       </div>
-                      <button style={s.qtyBtn} onClick={() => adjustQty(item, 1)} aria-label="increase">+</button>
+                      {canIncreaseQty(role) && (
+                        <button style={s.qtyBtn} onClick={() => adjustQty(item, 1)} aria-label="increase">+</button>
+                      )}
                     </div>
                   </td>
                   <td style={s.td}>
                     <span style={s.logEntry}>{item.last_change || '—'}</span>
                   </td>
                   <td style={s.td}>
-                    <button style={s.actionBtn} onClick={() => setModal({ edit: item })}>edit</button>
-                    <button style={s.dangerBtn} onClick={() => deleteItem(item.id)}>del</button>
+                    {canEditDetails(role) && (
+                      <button style={s.actionBtn} onClick={() => setModal({ edit: item })}>edit</button>
+                    )}
+                    {canDeleteItems(role) && (
+                      <button style={s.dangerBtn} onClick={() => deleteItem(item.id)}>del</button>
+                    )}
                   </td>
                 </tr>
               ))}
@@ -377,6 +415,13 @@ export default function Inventory({ user, onSignOut }) {
           item={modal.edit}
           onSave={fields => updateItem(modal.edit.id, { ...fields, last_change: `${displayName()} edited · ${now()}` })}
           onClose={() => setModal(null)}
+        />
+      )}
+      {managingMembers && (
+        <MembersModal
+          inventory={inventory}
+          onClose={() => setManagingMembers(false)}
+          onChanged={onInventoryChanged}
         />
       )}
     </div>
