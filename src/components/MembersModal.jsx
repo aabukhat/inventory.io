@@ -49,6 +49,7 @@ const s = {
   },
   muted: { fontSize: '12px', color: 'var(--text-muted)' },
   memberList: { display: 'flex', flexDirection: 'column', gap: '6px' },
+  error: { fontSize: '12px', color: 'var(--danger)', marginTop: '8px' },
   memberRow: {
     display: 'flex', alignItems: 'center', gap: '8px',
     padding: '8px 10px', borderRadius: 'var(--radius)',
@@ -79,6 +80,7 @@ export default function MembersModal({ inventory, onClose, onChanged }) {
   const [loading, setLoading] = useState(true)
   const [inviting, setInviting] = useState(false)
   const [name, setName] = useState(inventory.name)
+  const [error, setError] = useState('')
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -102,15 +104,25 @@ export default function MembersModal({ inventory, onClose, onChanged }) {
 
   async function handleRename() {
     if (!name.trim() || name.trim() === inventory.name) return
-    await renameInventory(inventory.id, name.trim())
-    onChanged?.()
+    setError('')
+    try {
+      await renameInventory(inventory.id, name.trim())
+      onChanged?.()
+    } catch (err) {
+      setError(err.message)
+    }
   }
 
   async function handleDelete() {
     if (!confirm(`delete "${inventory.name}"? this removes it for everyone.`)) return
-    await deleteInventory(inventory.id)
-    onChanged?.()
-    onClose()
+    setError('')
+    try {
+      await deleteInventory(inventory.id)
+      onChanged?.()
+      onClose()
+    } catch (err) {
+      setError(err.message)
+    }
   }
 
   return (
@@ -172,6 +184,8 @@ export default function MembersModal({ inventory, onClose, onChanged }) {
               <button style={s.dangerFullBtn} onClick={handleDelete}>delete inventory</button>
             </div>
           )}
+
+          {error && <p style={s.error}>{error}</p>}
         </div>
       </div>
 
