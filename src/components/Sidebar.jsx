@@ -60,6 +60,9 @@ const s = {
     padding: '9px 16px', borderRadius: 'var(--radius)', border: '1px solid var(--border-strong)',
     background: 'none', color: 'var(--text-muted)', fontSize: '13px',
   },
+  error: {
+    fontSize: '12px', color: 'var(--danger)', marginTop: '8px',
+  },
   saveBtn: {
     padding: '9px 20px', borderRadius: 'var(--radius)', border: 'none',
     background: 'var(--accent)', color: '#0e0e0e', fontSize: '13px', fontWeight: 600,
@@ -74,18 +77,37 @@ export default function Sidebar({ inventories, activeInventory, onSelectInventor
   const [creating, setCreating] = useState(false)
   const [name, setName] = useState('')
   const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
 
   const personal = inventories.find(i => i.type === 'personal')
   const shared = inventories.filter(i => i.type === 'shared')
 
+  function openCreate() {
+    setError('')
+    setName('')
+    setCreating(true)
+  }
+
+  function closeCreate() {
+    setCreating(false)
+    setError('')
+    setName('')
+  }
+
   async function handleCreate() {
-    if (!name.trim() || saving) return
+    if (saving) return
+    if (!name.trim()) {
+      setError('Name is required.')
+      return
+    }
     setSaving(true)
+    setError('')
     try {
       const id = await createSharedInventory(name.trim())
-      setCreating(false)
-      setName('')
+      closeCreate()
       await onInventoryCreated?.(id)
+    } catch (err) {
+      setError(err.message)
     } finally {
       setSaving(false)
     }
@@ -118,14 +140,14 @@ export default function Sidebar({ inventories, activeInventory, onSelectInventor
         ))}
       </div>
 
-      <button style={s.addBtn} onClick={() => setCreating(true)} title="new shared inventory">+</button>
+      <button style={s.addBtn} onClick={openCreate} title="new shared inventory">+</button>
 
       {creating && (
-        <div style={s.overlay} onClick={e => e.target === e.currentTarget && setCreating(false)}>
+        <div style={s.overlay} onClick={e => e.target === e.currentTarget && closeCreate()}>
           <div style={s.modal}>
             <div style={s.header}>
               <span style={s.title}>new shared inventory</span>
-              <button style={s.closeBtn} onClick={() => setCreating(false)}>×</button>
+              <button style={s.closeBtn} onClick={closeCreate}>×</button>
             </div>
             <div style={s.field}>
               <label style={s.label}>name</label>
@@ -133,14 +155,15 @@ export default function Sidebar({ inventories, activeInventory, onSelectInventor
                 style={s.input}
                 value={name}
                 autoFocus
-                onChange={e => setName(e.target.value)}
+                onChange={e => { setName(e.target.value); setError('') }}
                 onKeyDown={e => e.key === 'Enter' && handleCreate()}
                 placeholder="e.g. Household"
               />
+              {error && <p style={s.error}>{error}</p>}
             </div>
             <div style={s.footer}>
-              <button style={s.cancelBtn} onClick={() => setCreating(false)}>cancel</button>
-              <button style={s.saveBtn} onClick={handleCreate}>{saving ? 'creating…' : 'create'}</button>
+              <button style={s.cancelBtn} onClick={closeCreate}>cancel</button>
+              <button style={s.saveBtn} onClick={handleCreate} disabled={saving}>{saving ? 'creating…' : 'create'}</button>
             </div>
           </div>
         </div>

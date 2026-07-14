@@ -21,8 +21,16 @@ export async function listMyInventories() {
 
 export async function createSharedInventory(name) {
   const { data, error } = await supabase.rpc('create_shared_inventory', { p_name: name })
-  if (error) throw error
+  if (error) throw friendlyCreateError(error)
   return data
+}
+
+function friendlyCreateError(error) {
+  const msg = error.message || ''
+  if (msg.includes('INVENTORY_CAP_REACHED')) {
+    return new Error("You've reached the limit of 10 inventories during beta.")
+  }
+  return error
 }
 
 export async function renameInventory(id, name) {
