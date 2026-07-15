@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import { ItemModal, BulkModal } from './Modals'
 import MembersModal from './MembersModal'
+import Subsections from './Subsections'
 import {
   canAddItems, canIncreaseQty, canDecreaseQty, canEditDetails, canDeleteItems, canManageMembers,
 } from '../lib/permissions'
@@ -314,6 +315,8 @@ export default function Inventory({ user, inventory, onSignOut, onInventoryChang
         <div style={s.stat}><div style={s.statLabel}>seltzers</div><div style={s.statVal}>{seltzQty}</div></div>
         <div style={s.stat}><div style={s.statLabel}>liquor</div><div style={s.statVal}>{liquorQty}</div></div>
       </div>
+
+      <Subsections inventory={inventory} role={role} />
 
       <div style={s.controls}>
         <input
