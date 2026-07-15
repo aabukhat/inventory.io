@@ -5,6 +5,12 @@ function friendlySubsectionError(error) {
   if (msg.includes('SUBSECTION_ALREADY_EXISTS')) {
     return new Error('That subsection has already been added.')
   }
+  if (msg.includes('SUBSECTION_NAME_TAKEN')) {
+    return new Error('A subsection with that name already exists — use the existing one instead.')
+  }
+  if (msg.includes('SUBSECTION_NAME_INVALID')) {
+    return new Error('Subsection names must be 1–40 characters.')
+  }
   if (msg.includes('INSUFFICIENT_ROLE')) {
     return new Error('Only owners and editors can manage subsections.')
   }

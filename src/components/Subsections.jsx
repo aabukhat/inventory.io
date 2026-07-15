@@ -50,13 +50,32 @@ const s = {
     border: '1px solid var(--border-strong)', background: 'var(--surface-2)',
     color: 'var(--text)', fontSize: '14px',
   },
+  divider: { display: 'flex', alignItems: 'center', gap: '10px', margin: '1.25rem 0' },
+  dividerLine: { flex: 1, height: '1px', background: 'var(--border)' },
+  dividerText: {
+    fontSize: '11px', fontFamily: 'var(--font-mono)', letterSpacing: '0.06em',
+    textTransform: 'uppercase', color: 'var(--text-dim)',
+  },
+  customRow: { display: 'flex', gap: '8px' },
+  input: {
+    flex: 1, background: 'var(--surface-2)', border: '1px solid var(--border-strong)',
+    borderRadius: 'var(--radius)', padding: '9px 12px', fontSize: '14px',
+    outline: 'none', boxSizing: 'border-box', color: 'var(--text)',
+  },
+  smallBtn: {
+    background: 'none', border: '1px solid var(--border-strong)',
+    borderRadius: 'var(--radius)', padding: '9px 14px', fontSize: '13px', color: 'var(--text)',
+  },
 }
+
+const MAX_NAME_LENGTH = 40
 
 export default function Subsections({ inventory, role }) {
   const [sections, setSections] = useState([])
   const [adding, setAdding] = useState(false)
   const [error, setError] = useState('')
   const [dragId, setDragId] = useState(null)
+  const [customName, setCustomName] = useState('')
 
   const canManage = canManageSubsections(role)
 
@@ -93,11 +112,43 @@ export default function Subsections({ inventory, role }) {
     p => !sections.some(sec => sec.preset_key === p.key)
   )
 
+  function closeAdd() {
+    setAdding(false)
+    setError('')
+    setCustomName('')
+  }
+
   async function handleAdd(preset) {
     setError('')
     try {
       await addSubsection(inventory.id, preset.key, preset.label)
-      setAdding(false)
+      closeAdd()
+      await load()
+    } catch (err) {
+      setError(err.message)
+    }
+  }
+
+  async function handleAddCustom() {
+    const trimmed = customName.trim()
+    if (!trimmed) {
+      setError('Name is required.')
+      return
+    }
+    if (trimmed.length > MAX_NAME_LENGTH) {
+      setError(`Name must be ${MAX_NAME_LENGTH} characters or fewer.`)
+      return
+    }
+    const collision = sections.find(sec => sec.name.toLowerCase() === trimmed.toLowerCase())
+    if (collision) {
+      setError(`"${collision.name}" already exists — use the existing section instead.`)
+      return
+    }
+
+    setError('')
+    try {
+      await addSubsection(inventory.id, null, trimmed)
+      closeAdd()
       await load()
     } catch (err) {
       setError(err.message)
@@ -152,14 +203,14 @@ export default function Subsections({ inventory, role }) {
         )}
       </div>
 
-      {error && <p style={s.error}>{error}</p>}
+      {error && !adding && <p style={s.error}>{error}</p>}
 
       {adding && (
-        <div style={s.overlay} onClick={e => e.target === e.currentTarget && setAdding(false)}>
+        <div style={s.overlay} onClick={e => e.target === e.currentTarget && closeAdd()}>
           <div style={s.modal}>
             <div style={s.header}>
               <span style={s.title}>add subsection</span>
-              <button style={s.closeBtn} onClick={() => setAdding(false)}>×</button>
+              <button style={s.closeBtn} onClick={closeAdd}>×</button>
             </div>
             {availablePresets.length === 0 ? (
               <p style={s.muted}>all presets have been added.</p>
@@ -170,6 +221,25 @@ export default function Subsections({ inventory, role }) {
                 ))}
               </div>
             )}
+
+            <div style={s.divider}>
+              <div style={s.dividerLine} />
+              <span style={s.dividerText}>or custom</span>
+              <div style={s.dividerLine} />
+            </div>
+            <div style={s.customRow}>
+              <input
+                style={s.input}
+                value={customName}
+                placeholder="e.g. Sours"
+                maxLength={MAX_NAME_LENGTH}
+                onChange={e => { setCustomName(e.target.value); setError('') }}
+                onKeyDown={e => e.key === 'Enter' && handleAddCustom()}
+              />
+              <button style={s.smallBtn} onClick={handleAddCustom}>add</button>
+            </div>
+
+            {error && <p style={s.error}>{error}</p>}
           </div>
         </div>
       )}
