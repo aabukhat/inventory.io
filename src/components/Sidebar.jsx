@@ -1,83 +1,32 @@
 import { useState } from 'react'
 import { createSharedInventory } from '../lib/inventories'
-
-const s = {
-  rail: {
-    width: '64px', flexShrink: 0,
-    display: 'flex', flexDirection: 'column', alignItems: 'center',
-    gap: '10px', padding: '1.5rem 0',
-    borderRight: '1px solid var(--border)',
-    minHeight: '100dvh', boxSizing: 'border-box',
-  },
-  circle: (active) => ({
-    width: '40px', height: '40px', borderRadius: '50%', flexShrink: 0,
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-    fontSize: '14px', fontWeight: 600, cursor: 'pointer', userSelect: 'none',
-    background: active ? 'var(--accent)' : 'var(--surface-2)',
-    color: active ? '#0e0e0e' : 'var(--text-muted)',
-    border: `1px solid ${active ? 'var(--accent)' : 'var(--border-strong)'}`,
-    transition: 'all 0.1s',
-  }),
-  divider: { width: '32px', height: '1px', background: 'var(--border-strong)', flexShrink: 0 },
-  subDivider: { width: '20px', height: '1px', background: 'var(--border)', flexShrink: 0, margin: '2px 0' },
-  sharedList: {
-    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px',
-    overflowY: 'auto', flex: 1, width: '100%',
-  },
-  circleWrap: { position: 'relative', flexShrink: 0 },
-  memberBadge: {
-    position: 'absolute', bottom: '-2px', right: '-2px',
-    width: '10px', height: '10px', borderRadius: '50%',
-    background: 'var(--text-dim)', border: '2px solid var(--surface)',
-  },
-  addBtn: {
-    width: '40px', height: '40px', borderRadius: '50%', flexShrink: 0,
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-    fontSize: '18px', color: 'var(--text-dim)',
-    background: 'none', border: '1px dashed var(--border-strong)',
-  },
-  overlay: {
-    position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)',
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-    padding: '1rem', zIndex: 100,
-  },
-  modal: {
-    background: 'var(--surface)', border: '1px solid var(--border-strong)',
-    borderRadius: '12px', padding: '1.5rem', width: '100%', maxWidth: '320px',
-  },
-  header: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' },
-  title: { fontSize: '16px', fontWeight: 600 },
-  closeBtn: {
-    background: 'none', border: 'none', color: 'var(--text-muted)',
-    fontSize: '20px', lineHeight: 1, padding: '2px 6px', borderRadius: '4px',
-  },
-  field: { marginBottom: '1rem' },
-  label: {
-    display: 'block', fontSize: '11px', fontFamily: 'var(--font-mono)',
-    letterSpacing: '0.06em', textTransform: 'uppercase',
-    color: 'var(--text-muted)', marginBottom: '6px',
-  },
-  input: {
-    width: '100%', background: 'var(--surface-2)', border: '1px solid var(--border-strong)',
-    borderRadius: 'var(--radius)', padding: '9px 12px', fontSize: '14px',
-    outline: 'none', boxSizing: 'border-box', color: 'var(--text)',
-  },
-  footer: { display: 'flex', gap: '8px', justifyContent: 'flex-end', marginTop: '1.25rem' },
-  cancelBtn: {
-    padding: '9px 16px', borderRadius: 'var(--radius)', border: '1px solid var(--border-strong)',
-    background: 'none', color: 'var(--text-muted)', fontSize: '13px',
-  },
-  error: {
-    fontSize: '12px', color: 'var(--danger)', marginTop: '8px',
-  },
-  saveBtn: {
-    padding: '9px 20px', borderRadius: 'var(--radius)', border: 'none',
-    background: 'var(--accent)', color: '#0e0e0e', fontSize: '13px', fontWeight: 600,
-  },
-}
+import { cn } from '@/lib/utils'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+} from '@/components/ui/dialog'
 
 function initials(name) {
   return (name || '?').trim().charAt(0).toUpperCase()
+}
+
+function Circle({ active, title, onClick, children }) {
+  return (
+    <div
+      className={cn(
+        'flex h-10 w-10 shrink-0 cursor-pointer select-none items-center justify-center',
+        'rounded-full border text-sm font-semibold transition-colors',
+        active
+          ? 'border-primary bg-primary text-primary-foreground'
+          : 'border-input bg-secondary text-muted-foreground hover:border-[var(--border-strong)]'
+      )}
+      onClick={onClick}
+      title={title}
+    >
+      {children}
+    </div>
+  )
 }
 
 export default function Sidebar({ inventories, activeInventory, onSelectInventory, onInventoryCreated }) {
@@ -123,75 +72,87 @@ export default function Sidebar({ inventories, activeInventory, onSelectInventor
   }
 
   return (
-    <div style={s.rail}>
+    <div className="box-border flex min-h-dvh w-16 shrink-0 flex-col items-center gap-2.5 border-r border-border py-6">
       {personal && (
-        <div
-          style={s.circle(activeInventory?.id === personal.id)}
+        <Circle
+          active={activeInventory?.id === personal.id}
           onClick={() => onSelectInventory(personal.id)}
           title={personal.name}
         >
           🏠
-        </div>
+        </Circle>
       )}
 
-      <div style={s.divider} />
+      <div className="h-px w-8 shrink-0 bg-[var(--border-strong)]" />
 
-      <div style={s.sharedList}>
+      <div className="flex w-full flex-1 flex-col items-center gap-2.5 overflow-y-auto">
         {ownedShared.map(inv => (
-          <div
+          <Circle
             key={inv.id}
-            style={s.circle(activeInventory?.id === inv.id)}
+            active={activeInventory?.id === inv.id}
             onClick={() => onSelectInventory(inv.id)}
             title={`${inv.name} — owned by you`}
           >
             {initials(inv.name)}
-          </div>
+          </Circle>
         ))}
 
-        {ownedShared.length > 0 && memberShared.length > 0 && <div style={s.subDivider} />}
+        {ownedShared.length > 0 && memberShared.length > 0 && (
+          <div className="my-0.5 h-px w-5 shrink-0 bg-border" />
+        )}
 
         {memberShared.map(inv => (
-          <div key={inv.id} style={s.circleWrap}>
-            <div
-              style={s.circle(activeInventory?.id === inv.id)}
+          <div key={inv.id} className="relative shrink-0">
+            <Circle
+              active={activeInventory?.id === inv.id}
               onClick={() => onSelectInventory(inv.id)}
               title={`${inv.name} — shared with you (${inv.role})`}
             >
               {initials(inv.name)}
-            </div>
-            <span style={s.memberBadge} />
+            </Circle>
+            <span className="absolute -right-0.5 -bottom-0.5 h-2.5 w-2.5 rounded-full border-2 border-[var(--surface)] bg-[var(--text-dim)]" />
           </div>
         ))}
 
-        <button style={s.addBtn} onClick={openCreate} title="new shared inventory">+</button>
+        <Button
+          variant="outline"
+          size="icon"
+          className="shrink-0 rounded-full border-dashed text-muted-foreground"
+          onClick={openCreate}
+          title="new shared inventory"
+        >
+          +
+        </Button>
       </div>
 
-      {creating && (
-        <div style={s.overlay} onClick={e => e.target === e.currentTarget && closeCreate()}>
-          <div style={s.modal}>
-            <div style={s.header}>
-              <span style={s.title}>new shared inventory</span>
-              <button style={s.closeBtn} onClick={closeCreate}>×</button>
-            </div>
-            <div style={s.field}>
-              <label style={s.label}>name</label>
-              <input
-                style={s.input}
-                value={name}
-                autoFocus
-                onChange={e => { setName(e.target.value); setError('') }}
-                onKeyDown={e => e.key === 'Enter' && handleCreate()}
-                placeholder="e.g. Household"
-              />
-              {error && <p style={s.error}>{error}</p>}
-            </div>
-            <div style={s.footer}>
-              <button style={s.cancelBtn} onClick={closeCreate}>cancel</button>
-              <button style={s.saveBtn} onClick={handleCreate} disabled={saving}>{saving ? 'creating…' : 'create'}</button>
-            </div>
+      <Dialog open={creating} onOpenChange={(open) => !open && closeCreate()}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>new shared inventory</DialogTitle>
+          </DialogHeader>
+
+          <div>
+            <label className="mb-1.5 block font-mono text-[11px] tracking-wide text-muted-foreground uppercase">
+              name
+            </label>
+            <Input
+              value={name}
+              autoFocus
+              onChange={e => { setName(e.target.value); setError('') }}
+              onKeyDown={e => e.key === 'Enter' && handleCreate()}
+              placeholder="e.g. Household"
+            />
+            {error && <p className="mt-2 text-xs text-destructive">{error}</p>}
           </div>
-        </div>
-      )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={closeCreate}>cancel</Button>
+            <Button onClick={handleCreate} disabled={saving}>
+              {saving ? 'creating…' : 'create'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
