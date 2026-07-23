@@ -1,5 +1,7 @@
 import { supabase } from './supabase'
 
+export const ITEM_DRAG_MIME = 'application/x-drink-id'
+
 function friendlySubsectionError(error) {
   const msg = error.message || ''
   if (msg.includes('SUBSECTION_ALREADY_EXISTS')) {
@@ -14,13 +16,24 @@ function friendlySubsectionError(error) {
   if (msg.includes('INSUFFICIENT_ROLE')) {
     return new Error('Only owners and editors can manage subsections.')
   }
+  if (msg.includes('CANNOT_DELETE_UNCATEGORIZED')) {
+    return new Error('The Uncategorized section can\'t be deleted.')
+  }
+  return error
+}
+
+function friendlyMoveError(error) {
+  const msg = error.message || ''
+  if (msg.includes('INSUFFICIENT_ROLE')) {
+    return new Error('You don\'t have permission to move items in this inventory.')
+  }
   return error
 }
 
 export async function listSubsections(inventoryId) {
   const { data, error } = await supabase
     .from('inventory_subsections')
-    .select('id, preset_key, name, position')
+    .select('id, preset_key, name, position, is_uncategorized')
     .eq('inventory_id', inventoryId)
     .order('position')
   if (error) throw error
@@ -43,4 +56,17 @@ export async function reorderSubsections(inventoryId, orderedIds) {
     p_ids: orderedIds,
   })
   if (error) throw friendlySubsectionError(error)
+}
+
+export async function deleteSubsection(id) {
+  const { error } = await supabase.rpc('delete_subsection', { p_id: id })
+  if (error) throw friendlySubsectionError(error)
+}
+
+export async function moveDrink(drinkId, subsectionId) {
+  const { error } = await supabase.rpc('move_drink', {
+    p_drink_id: drinkId,
+    p_subsection_id: subsectionId,
+  })
+  if (error) throw friendlyMoveError(error)
 }

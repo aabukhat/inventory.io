@@ -1,112 +1,24 @@
-import { useState, useEffect, useCallback } from 'react'
-import { supabase } from '../lib/supabase'
-import { listSubsections, addSubsection, reorderSubsections } from '../lib/subsections'
+import { useState } from 'react'
+import { addSubsection, reorderSubsections, deleteSubsection, ITEM_DRAG_MIME } from '../lib/subsections'
 import { SUBSECTION_PRESETS } from '../lib/subsectionPresets'
 import { canManageSubsections } from '../lib/permissions'
-
-const s = {
-  wrap: { marginBottom: '1.5rem' },
-  label: {
-    display: 'block', fontSize: '11px', fontFamily: 'var(--font-mono)',
-    letterSpacing: '0.06em', textTransform: 'uppercase',
-    color: 'var(--text-muted)', marginBottom: '8px',
-  },
-  list: {
-    display: 'flex', flexWrap: 'wrap', gap: '10px', alignItems: 'stretch',
-  },
-  card: (dragging) => ({
-    background: 'var(--surface)', border: '1px solid var(--border)',
-    borderRadius: '10px', padding: '10px 14px', minWidth: '120px',
-    cursor: 'grab', opacity: dragging ? 0.4 : 1, transition: 'opacity 0.1s',
-  }),
-  cardName: { fontSize: '13px', fontWeight: 600, marginBottom: '2px' },
-  cardEmpty: { fontSize: '11px', color: 'var(--text-dim)', fontFamily: 'var(--font-mono)' },
-  addBtn: {
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-    minWidth: '120px', borderRadius: '10px', padding: '10px 14px',
-    fontSize: '13px', color: 'var(--text-dim)',
-    background: 'none', border: '1px dashed var(--border-strong)',
-  },
-  error: { fontSize: '12px', color: 'var(--danger)', marginTop: '8px' },
-  overlay: {
-    position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)',
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-    padding: '1rem', zIndex: 100,
-  },
-  modal: {
-    background: 'var(--surface)', border: '1px solid var(--border-strong)',
-    borderRadius: '12px', padding: '1.5rem', width: '100%', maxWidth: '320px',
-  },
-  header: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' },
-  title: { fontSize: '16px', fontWeight: 600 },
-  closeBtn: {
-    background: 'none', border: 'none', color: 'var(--text-muted)',
-    fontSize: '20px', lineHeight: 1, padding: '2px 6px', borderRadius: '4px',
-  },
-  muted: { fontSize: '13px', color: 'var(--text-muted)' },
-  presetList: { display: 'flex', flexDirection: 'column', gap: '8px' },
-  presetBtn: {
-    textAlign: 'left', padding: '10px 12px', borderRadius: 'var(--radius)',
-    border: '1px solid var(--border-strong)', background: 'var(--surface-2)',
-    color: 'var(--text)', fontSize: '14px',
-  },
-  divider: { display: 'flex', alignItems: 'center', gap: '10px', margin: '1.25rem 0' },
-  dividerLine: { flex: 1, height: '1px', background: 'var(--border)' },
-  dividerText: {
-    fontSize: '11px', fontFamily: 'var(--font-mono)', letterSpacing: '0.06em',
-    textTransform: 'uppercase', color: 'var(--text-dim)',
-  },
-  customRow: { display: 'flex', gap: '8px' },
-  input: {
-    flex: 1, background: 'var(--surface-2)', border: '1px solid var(--border-strong)',
-    borderRadius: 'var(--radius)', padding: '9px 12px', fontSize: '14px',
-    outline: 'none', boxSizing: 'border-box', color: 'var(--text)',
-  },
-  smallBtn: {
-    background: 'none', border: '1px solid var(--border-strong)',
-    borderRadius: 'var(--radius)', padding: '9px 14px', fontSize: '13px', color: 'var(--text)',
-  },
-}
+import { cn } from '@/lib/utils'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle,
+} from '@/components/ui/dialog'
 
 const MAX_NAME_LENGTH = 40
 
-export default function Subsections({ inventory, role }) {
-  const [sections, setSections] = useState([])
+export default function Subsections({ inventory, role, sections, itemCounts, onReload, onMoveItem }) {
   const [adding, setAdding] = useState(false)
   const [error, setError] = useState('')
   const [dragId, setDragId] = useState(null)
+  const [dropTargetId, setDropTargetId] = useState(null)
   const [customName, setCustomName] = useState('')
 
   const canManage = canManageSubsections(role)
-
-  const load = useCallback(async () => {
-    const data = await listSubsections(inventory.id)
-    setSections(data)
-  }, [inventory.id])
-
-  useEffect(() => { load() }, [load])
-
-  useEffect(() => {
-    let channel
-
-    async function subscribe() {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (session?.access_token) supabase.realtime.setAuth(session.access_token)
-
-      channel = supabase
-        .channel(`subsections-changes-${inventory.id}`)
-        .on('postgres_changes', {
-          event: '*', schema: 'public', table: 'inventory_subsections',
-          filter: `inventory_id=eq.${inventory.id}`,
-        }, () => { load() })
-        .subscribe((status, err) => {
-          if (status === 'CHANNEL_ERROR') console.error('[realtime] channel error', err)
-        })
-    }
-
-    subscribe()
-    return () => { if (channel) supabase.removeChannel(channel) }
-  }, [inventory.id, load])
 
   const availablePresets = SUBSECTION_PRESETS.filter(
     p => !sections.some(sec => sec.preset_key === p.key)
@@ -123,7 +35,7 @@ export default function Subsections({ inventory, role }) {
     try {
       await addSubsection(inventory.id, preset.key, preset.label)
       closeAdd()
-      await load()
+      await onReload()
     } catch (err) {
       setError(err.message)
     }
@@ -149,100 +61,148 @@ export default function Subsections({ inventory, role }) {
     try {
       await addSubsection(inventory.id, null, trimmed)
       closeAdd()
-      await load()
+      await onReload()
     } catch (err) {
       setError(err.message)
     }
   }
 
-  async function handleDrop(overId) {
+  async function handleDelete(sec) {
+    const count = itemCounts[sec.id] || 0
+    const warning = count > 0
+      ? `delete "${sec.name}"? its ${count} item${count === 1 ? '' : 's'} will move to Uncategorized.`
+      : `delete "${sec.name}"?`
+    if (!confirm(warning)) return
+    try {
+      await deleteSubsection(sec.id)
+      await onReload()
+    } catch (err) {
+      setError(err.message)
+    }
+  }
+
+  async function handleDrop(e, overSec) {
+    e.preventDefault()
+    setDropTargetId(null)
+
+    const drinkId = e.dataTransfer.getData(ITEM_DRAG_MIME)
+    if (drinkId) {
+      await onMoveItem(drinkId, overSec.id)
+      return
+    }
+
     const draggedId = dragId
     setDragId(null)
-    if (!draggedId || draggedId === overId) return
+    if (!draggedId || draggedId === overSec.id) return
 
     const current = [...sections]
     const fromIdx = current.findIndex(sec => sec.id === draggedId)
-    const toIdx = current.findIndex(sec => sec.id === overId)
+    const toIdx = current.findIndex(sec => sec.id === overSec.id)
     if (fromIdx === -1 || toIdx === -1) return
 
     const [moved] = current.splice(fromIdx, 1)
     current.splice(toIdx, 0, moved)
-    setSections(current)
 
     try {
       await reorderSubsections(inventory.id, current.map(sec => sec.id))
+      await onReload()
     } catch (err) {
       setError(err.message)
-      await load()
     }
   }
 
-  if (sections.length === 0 && !canManage) return null
+  const hasRealSections = sections.some(sec => !sec.is_uncategorized)
+  const visibleSections = hasRealSections ? sections : []
+
+  if (!hasRealSections && !canManage) return null
 
   return (
-    <div style={s.wrap}>
-      <label style={s.label}>sections</label>
-      <div style={s.list}>
-        {sections.map(sec => (
+    <div className="mb-6">
+      <label className="mb-2 block font-mono text-[11px] tracking-wide text-muted-foreground uppercase">
+        sections
+      </label>
+      <div className="flex flex-wrap items-stretch gap-2.5">
+        {visibleSections.map(sec => (
           <div
             key={sec.id}
-            style={s.card(dragId === sec.id)}
+            className={cn(
+              'relative min-w-[120px] cursor-grab rounded-[10px] border bg-card px-3.5 py-2.5 transition-colors',
+              dropTargetId === sec.id ? 'border-primary' : 'border-border',
+              dragId === sec.id ? 'opacity-40' : 'opacity-100'
+            )}
             draggable={canManage}
             onDragStart={() => setDragId(sec.id)}
-            onDragOver={e => e.preventDefault()}
-            onDrop={() => handleDrop(sec.id)}
-            onDragEnd={() => setDragId(null)}
+            onDragOver={e => { e.preventDefault(); setDropTargetId(sec.id) }}
+            onDragLeave={() => setDropTargetId(current => current === sec.id ? null : current)}
+            onDrop={e => handleDrop(e, sec)}
+            onDragEnd={() => { setDragId(null); setDropTargetId(null) }}
           >
-            <div style={s.cardName}>{sec.name}</div>
-            <div style={s.cardEmpty}>no items yet</div>
+            {canManage && !sec.is_uncategorized && (
+              <button
+                className="absolute top-1 right-1 rounded p-0.5 px-1 text-[13px] leading-none text-muted-foreground"
+                onClick={() => handleDelete(sec)}
+                title="delete subsection"
+              >
+                ×
+              </button>
+            )}
+            <div className="mb-0.5 text-[13px] font-semibold">{sec.name}</div>
+            <div className="font-mono text-[11px] text-muted-foreground">
+              {(itemCounts[sec.id] || 0) === 0 ? 'no items yet' : `${itemCounts[sec.id]} item${itemCounts[sec.id] === 1 ? '' : 's'}`}
+            </div>
           </div>
         ))}
 
         {canManage && (
-          <button style={s.addBtn} onClick={() => { setError(''); setAdding(true) }}>+ add subsection</button>
+          <Button
+            variant="outline"
+            className="min-w-[120px] rounded-[10px] border-dashed text-muted-foreground"
+            onClick={() => { setError(''); setAdding(true) }}
+          >
+            + add subsection
+          </Button>
         )}
       </div>
 
-      {error && !adding && <p style={s.error}>{error}</p>}
+      {error && !adding && <p className="mt-2 text-xs text-destructive">{error}</p>}
 
-      {adding && (
-        <div style={s.overlay} onClick={e => e.target === e.currentTarget && closeAdd()}>
-          <div style={s.modal}>
-            <div style={s.header}>
-              <span style={s.title}>add subsection</span>
-              <button style={s.closeBtn} onClick={closeAdd}>×</button>
-            </div>
-            {availablePresets.length === 0 ? (
-              <p style={s.muted}>all presets have been added.</p>
-            ) : (
-              <div style={s.presetList}>
-                {availablePresets.map(p => (
-                  <button key={p.key} style={s.presetBtn} onClick={() => handleAdd(p)}>{p.label}</button>
-                ))}
-              </div>
-            )}
+      <Dialog open={adding} onOpenChange={(open) => !open && closeAdd()}>
+        <DialogContent className="sm:max-w-[320px]">
+          <DialogHeader>
+            <DialogTitle>add subsection</DialogTitle>
+          </DialogHeader>
 
-            <div style={s.divider}>
-              <div style={s.dividerLine} />
-              <span style={s.dividerText}>or custom</span>
-              <div style={s.dividerLine} />
+          {availablePresets.length === 0 ? (
+            <p className="text-[13px] text-muted-foreground">all presets have been added.</p>
+          ) : (
+            <div className="flex flex-col gap-2">
+              {availablePresets.map(p => (
+                <Button key={p.key} variant="secondary" className="justify-start" onClick={() => handleAdd(p)}>
+                  {p.label}
+                </Button>
+              ))}
             </div>
-            <div style={s.customRow}>
-              <input
-                style={s.input}
-                value={customName}
-                placeholder="e.g. Sours"
-                maxLength={MAX_NAME_LENGTH}
-                onChange={e => { setCustomName(e.target.value); setError('') }}
-                onKeyDown={e => e.key === 'Enter' && handleAddCustom()}
-              />
-              <button style={s.smallBtn} onClick={handleAddCustom}>add</button>
-            </div>
+          )}
 
-            {error && <p style={s.error}>{error}</p>}
+          <div className="flex items-center gap-2.5">
+            <div className="h-px flex-1 bg-border" />
+            <span className="font-mono text-[11px] tracking-wide text-muted-foreground uppercase">or custom</span>
+            <div className="h-px flex-1 bg-border" />
           </div>
-        </div>
-      )}
+          <div className="flex gap-2">
+            <Input
+              value={customName}
+              placeholder="e.g. Sours"
+              maxLength={MAX_NAME_LENGTH}
+              onChange={e => { setCustomName(e.target.value); setError('') }}
+              onKeyDown={e => e.key === 'Enter' && handleAddCustom()}
+            />
+            <Button variant="outline" onClick={handleAddCustom}>add</Button>
+          </div>
+
+          {error && <p className="text-xs text-destructive">{error}</p>}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
