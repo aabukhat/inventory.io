@@ -214,11 +214,10 @@ export default function Inventory({ user, inventory, onSignOut, onInventoryChang
     itemCounts[item.subsection_id] = (itemCounts[item.subsection_id] || 0) + 1
   }
 
-  function sortHeader(col, label, width) {
+  function sortHeader(col, label, widthClass) {
     return (
       <TableHead
-        style={width ? { width } : undefined}
-        className="cursor-pointer border-b border-border bg-card select-none"
+        className={cn('cursor-pointer border-b border-border bg-card select-none', widthClass)}
         onClick={() => handleSort(col)}
       >
         {label}{' '}
@@ -236,12 +235,12 @@ export default function Inventory({ user, inventory, onSignOut, onInventoryChang
           <TableRow className="hover:bg-transparent">
             {sortHeader('name', 'name / brand')}
             {sortHeader('type', 'type')}
-            {sortHeader('quantity', 'quantity', '130px')}
+            {sortHeader('quantity', 'quantity', 'w-[130px]')}
             {sortHeader('last_change', 'last change')}
             {hasRealSections && (
-              <TableHead style={{ width: '110px' }} className="border-b border-border bg-card">move to</TableHead>
+              <TableHead className="w-[110px] border-b border-border bg-card">move to</TableHead>
             )}
-            <TableHead style={{ width: '80px' }} className="border-b border-border bg-card" />
+            <TableHead className="w-[80px] border-b border-border bg-card" />
           </TableRow>
         </TableHeader>
         <TableBody>

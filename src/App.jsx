@@ -34,14 +34,14 @@ export default function App() {
   if (inventoriesLoading || !activeInventory) return null
 
   return (
-    <div style={{ display: 'flex' }}>
+    <div className="flex">
       <Sidebar
         inventories={inventories}
         activeInventory={activeInventory}
         onSelectInventory={setActiveInventoryId}
         onInventoryCreated={handleInventoryCreated}
       />
-      <div style={{ flex: 1, minWidth: 0 }}>
+      <div className="flex-1 min-w-0">
         <Inventory
           user={user}
           inventory={activeInventory}
