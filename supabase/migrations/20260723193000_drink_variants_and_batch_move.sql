@@ -42,8 +42,11 @@ begin
     raise exception 'DRINK_NOT_FOUND';
   end if;
 
-  select count(distinct inventory_id), count(*), min(inventory_id)
-    into v_distinct_inventories, v_found_count, v_inventory_id
+  -- uuid has no built-in min()/max() aggregate, so distinctness and an
+  -- arbitrary representative id are fetched separately rather than via
+  -- count(distinct ...), min(...) in one pass.
+  select count(distinct inventory_id), count(*)
+    into v_distinct_inventories, v_found_count
     from public.drinks where id = any(p_drink_ids);
 
   if v_found_count is distinct from array_length(p_drink_ids, 1) then
@@ -53,6 +56,9 @@ begin
   if v_distinct_inventories <> 1 then
     raise exception 'MIXED_INVENTORY';
   end if;
+
+  select inventory_id into v_inventory_id
+  from public.drinks where id = any(p_drink_ids) limit 1;
 
   if public.current_user_role(v_inventory_id) not in ('owner','editor','contributor') then
     raise exception 'INSUFFICIENT_ROLE';

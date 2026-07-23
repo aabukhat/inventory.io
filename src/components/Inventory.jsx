@@ -417,7 +417,7 @@ export default function Inventory({ user, inventory, onSignOut, onInventoryChang
   }
 
   return (
-    <div className="mx-auto max-w-[820px] px-4 pt-6 pb-12">
+    <div className="mx-auto max-w-[940px] px-4 pt-6 pb-12">
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div className="font-mono text-xs tracking-wide text-primary uppercase">🧺 inventory.io</div>
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
