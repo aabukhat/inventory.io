@@ -1,96 +1,8 @@
 import { useState } from 'react'
 import { supabase } from '../lib/supabase'
-
-const s = {
-  wrap: {
-    minHeight: '100dvh',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: '2rem',
-  },
-  card: {
-    width: '100%',
-    maxWidth: '320px',
-  },
-  logo: {
-    fontFamily: 'var(--font-mono)',
-    fontSize: '13px',
-    color: 'var(--accent)',
-    letterSpacing: '0.08em',
-    textTransform: 'uppercase',
-    marginBottom: '2.5rem',
-  },
-  heading: {
-    fontSize: '22px',
-    fontWeight: 600,
-    marginBottom: '0.35rem',
-    lineHeight: 1.2,
-  },
-  sub: {
-    color: 'var(--text-muted)',
-    fontSize: '13px',
-    marginBottom: '2rem',
-  },
-  label: {
-    display: 'block',
-    fontSize: '11px',
-    fontFamily: 'var(--font-mono)',
-    letterSpacing: '0.06em',
-    textTransform: 'uppercase',
-    color: 'var(--text-muted)',
-    marginBottom: '8px',
-  },
-  input: {
-    width: '100%',
-    background: 'var(--surface)',
-    border: '1px solid var(--border-strong)',
-    borderRadius: 'var(--radius)',
-    padding: '10px 14px',
-    fontSize: '15px',
-    outline: 'none',
-    marginBottom: '1rem',
-    transition: 'border-color 0.15s',
-    color: 'var(--text)',
-    boxSizing: 'border-box',
-  },
-  btn: {
-    width: '100%',
-    background: 'var(--accent)',
-    color: '#0e0e0e',
-    border: 'none',
-    borderRadius: 'var(--radius)',
-    padding: '11px',
-    fontWeight: 600,
-    fontSize: '14px',
-    transition: 'opacity 0.15s',
-    cursor: 'pointer',
-  },
-  btnDisabled: {
-    opacity: 0.5,
-    cursor: 'default',
-  },
-  feedback: {
-    marginTop: '12px',
-    fontSize: '12px',
-    textAlign: 'center',
-  },
-  toggle: {
-    marginTop: '1.5rem',
-    fontSize: '12px',
-    color: 'var(--text-muted)',
-    textAlign: 'center',
-  },
-  toggleLink: {
-    color: 'var(--accent)',
-    background: 'none',
-    border: 'none',
-    padding: 0,
-    fontSize: '12px',
-    cursor: 'pointer',
-    textDecoration: 'underline',
-  },
-}
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 
 export default function Login() {
   const [mode, setMode] = useState('signin') // 'signin' | 'signup'
@@ -130,48 +42,52 @@ export default function Login() {
   const isSignUp = mode === 'signup'
 
   return (
-    <div style={s.wrap}>
-      <div style={s.card}>
-        <div style={s.logo}>🍺 cellar</div>
-        <h1 style={s.heading}>{isSignUp ? 'create account' : 'sign in'}</h1>
-        <p style={s.sub}>{isSignUp ? 'set up your cellar account' : 'welcome back'}</p>
-        <form onSubmit={handleSubmit}>
-          <label style={s.label} htmlFor="email">email</label>
-          <input
+    <div className="flex min-h-dvh items-center justify-center p-8">
+      <div className="w-full max-w-[320px]">
+        <div className="mb-10 font-mono text-[13px] tracking-wide text-primary uppercase">🍺 cellar</div>
+        <h1 className="mb-1.5 text-[22px] leading-tight font-semibold">
+          {isSignUp ? 'create account' : 'sign in'}
+        </h1>
+        <p className="mb-8 text-[13px] text-muted-foreground">
+          {isSignUp ? 'set up your cellar account' : 'welcome back'}
+        </p>
+        <form onSubmit={handleSubmit} className="flex flex-col gap-1">
+          <Label htmlFor="email" className="mb-1.5 font-mono text-[11px] tracking-wide text-muted-foreground uppercase">
+            email
+          </Label>
+          <Input
             id="email"
             type="email"
             value={email}
             onChange={e => { setEmail(e.target.value); reset() }}
-            style={s.input}
+            className="mb-4 h-auto py-2.5 text-[15px]"
             autoFocus
             autoComplete="email"
             placeholder="you@example.com"
             required
           />
-          <label style={s.label} htmlFor="password">password</label>
-          <input
+          <Label htmlFor="password" className="mb-1.5 font-mono text-[11px] tracking-wide text-muted-foreground uppercase">
+            password
+          </Label>
+          <Input
             id="password"
             type="password"
             value={password}
             onChange={e => { setPassword(e.target.value); reset() }}
-            style={s.input}
+            className="mb-4 h-auto py-2.5 text-[15px]"
             autoComplete={isSignUp ? 'new-password' : 'current-password'}
             placeholder="••••••••"
             required
           />
-          <button
-            type="submit"
-            style={{ ...s.btn, ...(loading ? s.btnDisabled : {}) }}
-            disabled={loading}
-          >
+          <Button type="submit" className="w-full py-2.5 text-sm" disabled={loading}>
             {loading ? '…' : isSignUp ? 'create account' : 'sign in'}
-          </button>
-          {error && <p style={{ ...s.feedback, color: 'var(--danger)' }}>{error}</p>}
-          {message && <p style={{ ...s.feedback, color: 'var(--accent)' }}>{message}</p>}
+          </Button>
+          {error && <p className="mt-3 text-center text-xs text-destructive">{error}</p>}
+          {message && <p className="mt-3 text-center text-xs text-primary">{message}</p>}
         </form>
-        <p style={s.toggle}>
+        <p className="mt-6 text-center text-xs text-muted-foreground">
           {isSignUp ? 'already have an account? ' : "don't have an account? "}
-          <button style={s.toggleLink} onClick={switchMode}>
+          <button className="cursor-pointer border-none bg-none p-0 text-xs text-primary underline" onClick={switchMode}>
             {isSignUp ? 'sign in' : 'sign up'}
           </button>
         </p>

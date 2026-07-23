@@ -1,79 +1,17 @@
 import { useState, useEffect, useCallback } from 'react'
 import { listMembers, updateMemberRole, removeMember, renameInventory, deleteInventory } from '../lib/inventories'
 import InviteMemberModal from './InviteMemberModal'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/components/ui/select'
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle,
+} from '@/components/ui/dialog'
 
 const ROLES = ['viewer', 'contributor', 'editor']
-
-const s = {
-  overlay: {
-    position: 'fixed', inset: 0,
-    background: 'rgba(0,0,0,0.6)',
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-    padding: '1rem', zIndex: 100,
-  },
-  modal: {
-    background: 'var(--surface)',
-    border: '1px solid var(--border-strong)',
-    borderRadius: '12px',
-    padding: '1.5rem',
-    width: '100%', maxWidth: '440px',
-  },
-  header: {
-    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-    marginBottom: '1.25rem',
-  },
-  title: { fontSize: '16px', fontWeight: 600 },
-  closeBtn: {
-    background: 'none', border: 'none',
-    color: 'var(--text-muted)', fontSize: '20px', lineHeight: 1,
-    padding: '2px 6px', borderRadius: '4px',
-  },
-  field: { marginBottom: '1.25rem' },
-  label: {
-    display: 'block', fontSize: '11px',
-    fontFamily: 'var(--font-mono)', letterSpacing: '0.06em',
-    textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '6px',
-  },
-  input: {
-    background: 'var(--surface-2)',
-    border: '1px solid var(--border-strong)',
-    borderRadius: 'var(--radius)', padding: '9px 12px',
-    fontSize: '14px', outline: 'none', boxSizing: 'border-box',
-    color: 'var(--text)',
-  },
-  rowBetween: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' },
-  smallBtn: {
-    background: 'none', border: '1px solid var(--border-strong)',
-    borderRadius: 'var(--radius)', padding: '5px 10px',
-    fontSize: '12px', color: 'var(--text)',
-  },
-  muted: { fontSize: '12px', color: 'var(--text-muted)' },
-  memberList: { display: 'flex', flexDirection: 'column', gap: '6px' },
-  error: { fontSize: '12px', color: 'var(--danger)', marginTop: '8px' },
-  memberRow: {
-    display: 'flex', alignItems: 'center', gap: '8px',
-    padding: '8px 10px', borderRadius: 'var(--radius)',
-    background: 'var(--surface-2)', border: '1px solid var(--border)',
-  },
-  memberEmail: { flex: 1, fontSize: '13px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
-  ownerTag: {
-    fontSize: '11px', fontFamily: 'var(--font-mono)', color: 'var(--accent)',
-    textTransform: 'uppercase', letterSpacing: '0.05em',
-  },
-  roleSelect: {
-    background: 'var(--surface)', border: '1px solid var(--border-strong)',
-    borderRadius: '6px', padding: '4px 6px', fontSize: '12px', color: 'var(--text)',
-  },
-  removeBtn: {
-    background: 'none', border: '1px solid var(--border)',
-    borderRadius: '6px', padding: '4px 8px', fontSize: '12px', color: 'var(--danger)',
-  },
-  dangerFullBtn: {
-    width: '100%', padding: '9px 16px', borderRadius: 'var(--radius)',
-    border: '1px solid var(--danger)', background: 'none',
-    color: 'var(--danger)', fontSize: '13px', fontWeight: 600,
-  },
-}
 
 export default function MembersModal({ inventory, onClose, onChanged }) {
   const [members, setMembers] = useState([])
@@ -127,50 +65,66 @@ export default function MembersModal({ inventory, onClose, onChanged }) {
 
   return (
     <>
-      <div style={s.overlay} onClick={e => e.target === e.currentTarget && onClose()}>
-        <div style={s.modal}>
-          <div style={s.header}>
-            <span style={s.title}>manage "{inventory.name}"</span>
-            <button style={s.closeBtn} onClick={onClose}>×</button>
-          </div>
+      <Dialog open onOpenChange={(open) => !open && onClose()}>
+        <DialogContent className="sm:max-w-[440px]">
+          <DialogHeader>
+            <DialogTitle>manage "{inventory.name}"</DialogTitle>
+          </DialogHeader>
 
-          <div style={s.field}>
-            <label style={s.label}>rename</label>
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <input
-                style={{ ...s.input, flex: 1 }}
+          <div>
+            <Label className="mb-1.5 font-mono text-[11px] tracking-wide text-muted-foreground uppercase">
+              rename
+            </Label>
+            <div className="flex gap-2">
+              <Input
+                className="flex-1"
                 value={name}
                 onChange={e => setName(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && handleRename()}
               />
-              <button style={s.smallBtn} onClick={handleRename}>save</button>
+              <Button variant="outline" size="sm" onClick={handleRename}>save</Button>
             </div>
           </div>
 
-          <div style={s.field}>
-            <div style={s.rowBetween}>
-              <label style={{ ...s.label, marginBottom: 0 }}>members</label>
-              <button style={s.smallBtn} onClick={() => setInviting(true)}>+ invite</button>
+          <div>
+            <div className="mb-2 flex items-center justify-between">
+              <Label className="font-mono text-[11px] tracking-wide text-muted-foreground uppercase">
+                members
+              </Label>
+              <Button variant="outline" size="sm" onClick={() => setInviting(true)}>+ invite</Button>
             </div>
             {loading ? (
-              <div style={s.muted}>loading…</div>
+              <div className="text-xs text-muted-foreground">loading…</div>
             ) : (
-              <div style={s.memberList}>
+              <div className="flex flex-col gap-1.5">
                 {members.map(m => (
-                  <div key={m.user_id} style={s.memberRow}>
-                    <span style={s.memberEmail}>{m.profile?.email || m.user_id}</span>
+                  <div
+                    key={m.user_id}
+                    className="flex items-center gap-2 rounded-lg border border-border bg-secondary px-2.5 py-2"
+                  >
+                    <span className="flex-1 overflow-hidden text-[13px] text-ellipsis whitespace-nowrap">
+                      {m.profile?.email || m.user_id}
+                    </span>
                     {m.role === 'owner' ? (
-                      <span style={s.ownerTag}>owner</span>
+                      <span className="font-mono text-[11px] tracking-wide text-primary uppercase">owner</span>
                     ) : (
                       <>
-                        <select
-                          style={s.roleSelect}
-                          value={m.role}
-                          onChange={e => handleRoleChange(m.user_id, e.target.value)}
+                        <Select value={m.role} onValueChange={(role) => handleRoleChange(m.user_id, role)}>
+                          <SelectTrigger size="sm" className="h-auto py-1 text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {ROLES.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-destructive"
+                          onClick={() => handleRemove(m.user_id)}
                         >
-                          {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
-                        </select>
-                        <button style={s.removeBtn} onClick={() => handleRemove(m.user_id)}>remove</button>
+                          remove
+                        </Button>
                       </>
                     )}
                   </div>
@@ -180,14 +134,14 @@ export default function MembersModal({ inventory, onClose, onChanged }) {
           </div>
 
           {inventory.type === 'shared' && (
-            <div style={s.field}>
-              <button style={s.dangerFullBtn} onClick={handleDelete}>delete inventory</button>
-            </div>
+            <Button variant="destructive" className="w-full" onClick={handleDelete}>
+              delete inventory
+            </Button>
           )}
 
-          {error && <p style={s.error}>{error}</p>}
-        </div>
-      </div>
+          {error && <p className="text-xs text-destructive">{error}</p>}
+        </DialogContent>
+      </Dialog>
 
       {inviting && (
         <InviteMemberModal

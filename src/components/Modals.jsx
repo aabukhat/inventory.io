@@ -1,116 +1,41 @@
 import { useState, useEffect } from 'react'
 import { searchProducts, CAN_SIZES, BOTTLE_SIZES, LIQUOR_UNITS, LIQUOR_UNIT_SIZE_MAP } from '../lib/products'
+import { cn } from '@/lib/utils'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/components/ui/select'
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+} from '@/components/ui/dialog'
 
 const TYPES = ['beer', 'seltzer', 'cider', 'liquor', 'other']
 
-const s = {
-  overlay: {
-    position: 'fixed', inset: 0,
-    background: 'rgba(0,0,0,0.6)',
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-    padding: '1rem', zIndex: 100,
-  },
-  modal: {
-    background: 'var(--surface)',
-    border: '1px solid var(--border-strong)',
-    borderRadius: '12px',
-    padding: '1.5rem',
-    width: '100%', maxWidth: '380px',
-  },
-  header: {
-    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-    marginBottom: '1.25rem',
-  },
-  title: { fontSize: '16px', fontWeight: 600 },
-  closeBtn: {
-    background: 'none', border: 'none',
-    color: 'var(--text-muted)', fontSize: '20px', lineHeight: 1,
-    padding: '2px 6px', borderRadius: '4px',
-  },
-  field: { marginBottom: '1rem' },
-  label: {
-    display: 'block', fontSize: '11px',
-    fontFamily: 'var(--font-mono)', letterSpacing: '0.06em',
-    textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '6px',
-  },
-  input: {
-    width: '100%', background: 'var(--surface-2)',
-    border: '1px solid var(--border-strong)',
-    borderRadius: 'var(--radius)', padding: '9px 12px',
-    fontSize: '14px', outline: 'none', boxSizing: 'border-box',
-  },
-  autocompleteWrap: { position: 'relative' },
-  suggestionList: {
-    position: 'absolute', top: '100%', left: 0, right: 0,
-    background: 'var(--surface)', border: '1px solid var(--border-strong)',
-    borderRadius: 'var(--radius)', marginTop: '3px',
-    zIndex: 200, overflow: 'hidden',
-    boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
-  },
-  suggestionItem: (active) => ({
-    padding: '9px 12px', fontSize: '13px', cursor: 'pointer',
-    background: active ? 'var(--surface-2)' : 'transparent',
-    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-    gap: '8px', transition: 'background 0.08s',
-  }),
-  suggestionMeta: {
-    fontSize: '10px', color: 'var(--text-dim)',
-    fontFamily: 'var(--font-mono)', whiteSpace: 'nowrap',
-  },
-  typeGrid: {
-    display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '6px',
-  },
-  typeBtn: (active) => ({
-    padding: '7px 4px', borderRadius: 'var(--radius)',
-    border: `1px solid ${active ? 'var(--accent)' : 'var(--border-strong)'}`,
-    background: active ? 'rgba(200,245,90,0.12)' : 'var(--surface-2)',
-    color: active ? 'var(--accent)' : 'var(--text-muted)',
-    fontSize: '12px', fontWeight: active ? 600 : 400,
-    textAlign: 'center', cursor: 'pointer', transition: 'all 0.1s',
-  }),
-  qtyRow: { display: 'flex', gap: '8px', alignItems: 'stretch' },
-  qtyInput: {
-    width: '72px', background: 'var(--surface-2)',
-    border: '1px solid var(--border-strong)',
-    borderRadius: 'var(--radius)', padding: '9px 12px',
-    fontSize: '14px', outline: 'none', boxSizing: 'border-box',
-    flexShrink: 0,
-  },
-  unitGroup: { display: 'flex', gap: '4px' },
-  unitBtn: (active) => ({
-    padding: '7px 12px', borderRadius: 'var(--radius)',
-    border: `1px solid ${active ? 'var(--accent)' : 'var(--border-strong)'}`,
-    background: active ? 'rgba(200,245,90,0.12)' : 'var(--surface-2)',
-    color: active ? 'var(--accent)' : 'var(--text-muted)',
-    fontSize: '12px', fontWeight: active ? 600 : 400,
-    cursor: 'pointer', transition: 'all 0.1s', whiteSpace: 'nowrap',
-  }),
-  sizeSelect: {
-    flex: 1, background: 'var(--surface-2)',
-    border: '1px solid var(--border-strong)',
-    borderRadius: 'var(--radius)', padding: '9px 10px',
-    fontSize: '13px', outline: 'none', color: 'var(--text)',
-    minWidth: 0,
-  },
-  footer: { display: 'flex', gap: '8px', justifyContent: 'flex-end', marginTop: '1.25rem' },
-  cancelBtn: {
-    padding: '9px 16px', borderRadius: 'var(--radius)',
-    border: '1px solid var(--border-strong)', background: 'none',
-    color: 'var(--text-muted)', fontSize: '13px',
-  },
-  saveBtn: {
-    padding: '9px 20px', borderRadius: 'var(--radius)',
-    border: 'none', background: 'var(--accent)',
-    color: '#0e0e0e', fontSize: '13px', fontWeight: 600,
-  },
-  bulkArea: {
-    width: '100%', background: 'var(--surface-2)',
-    border: '1px solid var(--border-strong)',
-    borderRadius: 'var(--radius)', padding: '9px 12px',
-    fontSize: '12px', fontFamily: 'var(--font-mono)',
-    outline: 'none', resize: 'vertical', minHeight: '120px',
-    color: 'var(--text)',
-  },
+function FieldLabel({ children }) {
+  return (
+    <Label className="mb-1.5 font-mono text-[11px] tracking-wide text-muted-foreground uppercase">
+      {children}
+    </Label>
+  )
+}
+
+function PillButton({ active, children, ...props }) {
+  return (
+    <button
+      className={cn(
+        'cursor-pointer rounded-lg border px-3 py-1.5 text-xs whitespace-nowrap transition-colors',
+        active
+          ? 'border-primary bg-primary/10 font-semibold text-primary'
+          : 'border-input bg-secondary font-normal text-muted-foreground'
+      )}
+      {...props}
+    >
+      {children}
+    </button>
+  )
 }
 
 export function ItemModal({ item, onSave, onClose }) {
@@ -197,18 +122,16 @@ export function ItemModal({ item, onSave, onClose }) {
   }
 
   return (
-    <div style={s.overlay} onClick={e => e.target === e.currentTarget && onClose()}>
-      <div style={s.modal}>
-        <div style={s.header}>
-          <span style={s.title}>{item ? 'edit item' : 'add item'}</span>
-          <button style={s.closeBtn} onClick={onClose}>×</button>
-        </div>
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="sm:max-w-[380px]">
+        <DialogHeader>
+          <DialogTitle>{item ? 'edit item' : 'add item'}</DialogTitle>
+        </DialogHeader>
 
-        <div style={s.field}>
-          <label style={s.label}>name / brand</label>
-          <div style={s.autocompleteWrap}>
-            <input
-              style={s.input}
+        <div>
+          <FieldLabel>name / brand</FieldLabel>
+          <div className="relative">
+            <Input
               value={name}
               autoFocus
               autoComplete="off"
@@ -219,16 +142,21 @@ export function ItemModal({ item, onSave, onClose }) {
               placeholder="e.g. Modelo Especial"
             />
             {showSuggestions && (
-              <div style={s.suggestionList}>
+              <div className="absolute inset-x-0 top-full z-20 mt-1 overflow-hidden rounded-lg border border-input bg-popover shadow-lg">
                 {suggestions.map((p, i) => (
                   <div
                     key={p.name}
-                    style={s.suggestionItem(i === activeSuggestion)}
+                    className={cn(
+                      'flex cursor-pointer items-center justify-between gap-2 px-3 py-2 text-[13px] transition-colors',
+                      i === activeSuggestion ? 'bg-secondary' : 'bg-transparent'
+                    )}
                     onMouseDown={() => selectSuggestion(p)}
                     onMouseEnter={() => setActiveSuggestion(i)}
                   >
                     <span>{p.name}</span>
-                    <span style={s.suggestionMeta}>{p.type} · {p.defaultUnit} · {p.defaultSize}</span>
+                    <span className="font-mono text-[10px] whitespace-nowrap text-muted-foreground">
+                      {p.type} · {p.defaultUnit} · {p.defaultSize}
+                    </span>
                   </div>
                 ))}
               </div>
@@ -236,59 +164,63 @@ export function ItemModal({ item, onSave, onClose }) {
           </div>
         </div>
 
-        <div style={s.field}>
-          <label style={s.label}>type</label>
-          <div style={s.typeGrid}>
+        <div>
+          <FieldLabel>type</FieldLabel>
+          <div className="grid grid-cols-5 gap-1.5">
             {TYPES.map(t => (
-              <button key={t} style={s.typeBtn(type === t)} onClick={() => handleTypeChange(t)}>{t}</button>
+              <PillButton key={t} active={type === t} onClick={() => handleTypeChange(t)}>
+                {t}
+              </PillButton>
             ))}
           </div>
         </div>
 
-        <div style={s.field}>
-          <label style={s.label}>quantity</label>
-          <div style={s.qtyRow}>
-            <input
-              style={s.qtyInput}
+        <div>
+          <FieldLabel>quantity</FieldLabel>
+          <div className="flex items-stretch gap-2">
+            <Input
               type="number"
               min="0"
               value={qty}
               onChange={e => setQty(e.target.value)}
+              className="w-18 shrink-0"
             />
             {isLiquor ? (
-              <select
-                style={{ ...s.sizeSelect, flex: 1 }}
-                value={unit}
-                onChange={e => handleUnitChange(e.target.value)}
-              >
-                {LIQUOR_UNITS.map(u => (
-                  <option key={u} value={u}>{u} · {LIQUOR_UNIT_SIZE_MAP[u]}</option>
-                ))}
-              </select>
+              <Select value={unit} onValueChange={handleUnitChange}>
+                <SelectTrigger className="flex-1">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {LIQUOR_UNITS.map(u => (
+                    <SelectItem key={u} value={u}>{u} · {LIQUOR_UNIT_SIZE_MAP[u]}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             ) : (
               <>
-                <div style={s.unitGroup}>
-                  <button style={s.unitBtn(unit === 'can')} onClick={() => setUnit('can')}>can</button>
-                  <button style={s.unitBtn(unit === 'bottle')} onClick={() => setUnit('bottle')}>bottle</button>
+                <div className="flex gap-1">
+                  <PillButton active={unit === 'can'} onClick={() => setUnit('can')}>can</PillButton>
+                  <PillButton active={unit === 'bottle'} onClick={() => setUnit('bottle')}>bottle</PillButton>
                 </div>
-                <select
-                  style={s.sizeSelect}
-                  value={unitSize}
-                  onChange={e => setUnitSize(e.target.value)}
-                >
-                  {sizes.map(sz => <option key={sz} value={sz}>{sz}</option>)}
-                </select>
+                <Select value={unitSize} onValueChange={setUnitSize}>
+                  <SelectTrigger className="flex-1">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {sizes.map(sz => <SelectItem key={sz} value={sz}>{sz}</SelectItem>)}
+                  </SelectContent>
+                </Select>
               </>
             )}
           </div>
         </div>
 
-        <div style={s.footer}>
-          <button style={s.cancelBtn} onClick={onClose}>cancel</button>
-          <button style={s.saveBtn} onClick={submit}>save</button>
-        </div>
-      </div>
-    </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>cancel</Button>
+          <Button onClick={submit}>save</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }
 
@@ -313,25 +245,26 @@ export function BulkModal({ onSave, onClose }) {
   }
 
   return (
-    <div style={s.overlay} onClick={e => e.target === e.currentTarget && onClose()}>
-      <div style={s.modal}>
-        <div style={s.header}>
-          <span style={s.title}>bulk add</span>
-          <button style={s.closeBtn} onClick={onClose}>×</button>
-        </div>
-        <div style={s.field}>
-          <label style={s.label}>one item per line: name, type, quantity</label>
-          <textarea
-            style={s.bulkArea} value={text}
-            onChange={e => setText(e.target.value)} autoFocus
-            placeholder={"Lagunitas IPA, beer, 6\nWhite Claw Black Cherry, seltzer, 12\nAngry Orchard, cider, 4"}
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="sm:max-w-[380px]">
+        <DialogHeader>
+          <DialogTitle>bulk add</DialogTitle>
+        </DialogHeader>
+        <div>
+          <FieldLabel>one item per line: name, type, quantity</FieldLabel>
+          <Textarea
+            value={text}
+            onChange={e => setText(e.target.value)}
+            autoFocus
+            className="min-h-[120px] font-mono text-xs"
+            placeholder={'Lagunitas IPA, beer, 6\nWhite Claw Black Cherry, seltzer, 12\nAngry Orchard, cider, 4'}
           />
         </div>
-        <div style={s.footer}>
-          <button style={s.cancelBtn} onClick={onClose}>cancel</button>
-          <button style={s.saveBtn} onClick={submit}>add all</button>
-        </div>
-      </div>
-    </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>cancel</Button>
+          <Button onClick={submit}>add all</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }

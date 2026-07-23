@@ -4,8 +4,6 @@
 
 @custom-variant dark (&:is(.dark *));
 
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
 :root {
   --bg: #0e0e0e;
   --surface: #1a1a1a;
