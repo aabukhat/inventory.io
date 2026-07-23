@@ -1,10 +1,12 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, Fragment } from 'react'
+import { ChevronRightIcon, ChevronDownIcon } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { ItemModal, BulkModal } from './Modals'
 import MembersModal from './MembersModal'
 import Subsections from './Subsections'
 import { useSubsections } from '../hooks/useSubsections'
-import { moveDrink, ITEM_DRAG_MIME } from '../lib/subsections'
+import { moveDrinks, ITEM_DRAG_MIME } from '../lib/subsections'
+import { groupItems, dominantType, sumQuantity, latestChange, parseLastChange } from '../lib/variantGrouping'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -37,7 +39,8 @@ export default function Inventory({ user, inventory, onSignOut, onInventoryChang
   const [managingMembers, setManagingMembers] = useState(false)
   const [fadingOut, setFadingOut] = useState(new Set())
   const [fadingIn, setFadingIn] = useState(new Set())
-  const [sortCol, setSortCol] = useState('name')
+  const [expandedGroups, setExpandedGroups] = useState(new Set())
+  const [sortCol, setSortCol] = useState('drink_name')
   const [sortDir, setSortDir] = useState('asc')
   const [moveError, setMoveError] = useState('')
 
@@ -51,13 +54,22 @@ export default function Inventory({ user, inventory, onSignOut, onInventoryChang
     else { setSortCol(col); setSortDir('asc') }
   }
 
+  function toggleGroup(key) {
+    setExpandedGroups(prev => {
+      const next = new Set(prev)
+      if (next.has(key)) next.delete(key)
+      else next.add(key)
+      return next
+    })
+  }
+
   const load = useCallback(async () => {
     setLoading(true)
     const { data, error } = await supabase
       .from('drinks')
       .select('*')
       .eq('inventory_id', inventory.id)
-      .order('name')
+      .order('drink_name')
     if (!error) setItems(data || [])
     setLoading(false)
   }, [inventory.id])
@@ -80,7 +92,7 @@ export default function Inventory({ user, inventory, onSignOut, onInventoryChang
         }, (payload) => {
           if (payload.eventType === 'INSERT') {
             const row = payload.new
-            setItems(prev => [...prev, row].sort((a, b) => a.name.localeCompare(b.name)))
+            setItems(prev => [...prev, row].sort((a, b) => (a.drink_name || '').localeCompare(b.drink_name || '')))
             setFadingIn(prev => new Set(prev).add(row.id))
             setTimeout(() => setFadingIn(prev => { const n = new Set(prev); n.delete(row.id); return n }), 500)
           } else if (payload.eventType === 'UPDATE') {
@@ -127,10 +139,10 @@ export default function Inventory({ user, inventory, onSignOut, onInventoryChang
     setModal(null)
   }
 
-  async function moveItem(drinkId, subsectionId) {
+  async function moveItem(drinkIds, subsectionId) {
     setMoveError('')
     try {
-      await moveDrink(drinkId, subsectionId)
+      await moveDrinks(Array.isArray(drinkIds) ? drinkIds : [drinkIds], subsectionId)
     } catch (err) {
       setMoveError(err.message)
     }
@@ -168,8 +180,8 @@ export default function Inventory({ user, inventory, onSignOut, onInventoryChang
   }
 
   function exportCSV() {
-    const rows = [['name', 'type', 'quantity', 'last change'],
-      ...items.map(i => [i.name, i.type, i.quantity, i.last_change || ''])]
+    const rows = [['brand', 'drink_name', 'flavor', 'type', 'quantity', 'last change'],
+      ...items.map(i => [i.brand || '', i.drink_name, i.flavor || '', i.type, i.quantity, i.last_change || ''])]
     const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n')
     const a = document.createElement('a')
     a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv)
@@ -179,15 +191,12 @@ export default function Inventory({ user, inventory, onSignOut, onInventoryChang
 
   const filtered = items.filter(i => {
     const q = search.toLowerCase()
-    return (!q || i.name.toLowerCase().includes(q)) && (!filterType || i.type === filterType)
+    const haystack = [i.brand, i.drink_name, i.flavor].filter(Boolean).join(' ').toLowerCase()
+    return (!q || haystack.includes(q)) && (!filterType || i.type === filterType)
   })
 
-  function parseLastChange(str) {
-    if (!str) return 0
-    const after = str.split('·').pop()?.trim()
-    if (!after) return 0
-    const year = new Date().getFullYear()
-    return new Date(after.replace(',', `, ${year}`)).getTime() || 0
+  function brandDrinkName(item) {
+    return [item.brand, item.drink_name].filter(Boolean).join(' ').toLowerCase()
   }
 
   const displayed = [...filtered].sort((a, b) => {
@@ -196,6 +205,8 @@ export default function Inventory({ user, inventory, onSignOut, onInventoryChang
       cmp = (a.quantity ?? 0) - (b.quantity ?? 0)
     } else if (sortCol === 'last_change') {
       cmp = parseLastChange(a.last_change) - parseLastChange(b.last_change)
+    } else if (sortCol === 'drink_name') {
+      cmp = brandDrinkName(a).localeCompare(brandDrinkName(b))
     } else {
       cmp = (a[sortCol] ?? '').toString().toLowerCase().localeCompare((b[sortCol] ?? '').toString().toLowerCase())
     }
@@ -228,12 +239,159 @@ export default function Inventory({ user, inventory, onSignOut, onInventoryChang
     )
   }
 
+  function itemLabel(item) {
+    return [item.brand, item.drink_name, item.flavor].filter(Boolean).join(' ')
+  }
+
+  function renderItemRow(item, { nested = false } = {}) {
+    return (
+      <TableRow
+        key={item.id}
+        className={fadingOut.has(item.id) ? 'row-pop-out' : fadingIn.has(item.id) ? 'row-pop-in' : undefined}
+        draggable={canMoveItems && hasRealSections}
+        onDragStart={e => {
+          e.dataTransfer.setData(ITEM_DRAG_MIME, JSON.stringify([item.id]))
+          e.dataTransfer.effectAllowed = 'move'
+        }}
+      >
+        <TableCell className={cn('font-medium whitespace-normal', nested && 'pl-8 font-normal text-muted-foreground')}>
+          {nested ? (item.flavor || '(no flavor)') : itemLabel(item)}
+        </TableCell>
+        <TableCell>
+          <Badge className={cn('rounded-md font-medium', TYPE_BADGE_CLASSES[item.type] || TYPE_BADGE_CLASSES.other)}>
+            {item.type}
+          </Badge>
+        </TableCell>
+        <TableCell>
+          <div className="flex items-center gap-2">
+            {canDecreaseQty(role) && (
+              <button
+                className="flex h-6.5 w-6.5 items-center justify-center rounded-full border border-input bg-secondary text-base transition-colors hover:border-[var(--border-strong)]"
+                onClick={() => adjustQty(item, -1)}
+                aria-label="decrease"
+              >
+                −
+              </button>
+            )}
+            <div className="min-w-8 text-center">
+              <div className="font-mono font-semibold">{item.quantity}</div>
+              {item.unit && item.unit_size && (
+                <div className="mt-0.5 font-mono text-[10px] whitespace-nowrap text-muted-foreground">
+                  {item.unit_size} {item.unit}
+                </div>
+              )}
+            </div>
+            {canIncreaseQty(role) && (
+              <button
+                className="flex h-6.5 w-6.5 items-center justify-center rounded-full border border-input bg-secondary text-base transition-colors hover:border-[var(--border-strong)]"
+                onClick={() => adjustQty(item, 1)}
+                aria-label="increase"
+              >
+                +
+              </button>
+            )}
+          </div>
+        </TableCell>
+        <TableCell>
+          <span className="font-mono text-[11px] text-muted-foreground">{item.last_change || '—'}</span>
+        </TableCell>
+        {hasRealSections && (
+          <TableCell>
+            {canMoveItems && (
+              <Select value={item.subsection_id} onValueChange={(value) => moveItem([item.id], value)}>
+                <SelectTrigger size="sm" className="h-auto py-1 text-[11px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {sections.map(sec => (
+                    <SelectItem key={sec.id} value={sec.id}>{sec.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          </TableCell>
+        )}
+        <TableCell>
+          {canEditDetails(role) && (
+            <Button variant="outline" size="sm" className="mr-1" onClick={() => setModal({ edit: item })}>
+              edit
+            </Button>
+          )}
+          {canDeleteItems(role) && (
+            <Button variant="outline" size="sm" className="text-destructive" onClick={() => deleteItem(item.id)}>
+              del
+            </Button>
+          )}
+        </TableCell>
+      </TableRow>
+    )
+  }
+
+  function renderGroupRow(entry) {
+    const variants = entry.items
+    const expanded = expandedGroups.has(entry.key)
+    const groupIds = variants.map(v => v.id)
+
+    return (
+      <Fragment key={entry.key}>
+        <TableRow
+          draggable={canMoveItems && hasRealSections}
+          onDragStart={e => {
+            e.dataTransfer.setData(ITEM_DRAG_MIME, JSON.stringify(groupIds))
+            e.dataTransfer.effectAllowed = 'move'
+          }}
+        >
+          <TableCell className="font-medium whitespace-normal">
+            <button
+              className="inline-flex items-center gap-1.5 text-left"
+              onClick={() => toggleGroup(entry.key)}
+              aria-label={expanded ? 'collapse' : 'expand'}
+            >
+              {expanded ? <ChevronDownIcon className="size-3.5 text-muted-foreground" /> : <ChevronRightIcon className="size-3.5 text-muted-foreground" />}
+              {[variants[0].brand, variants[0].drink_name].filter(Boolean).join(' ')}
+              <span className="font-mono text-[10px] text-muted-foreground">({variants.length})</span>
+            </button>
+          </TableCell>
+          <TableCell>
+            <Badge className={cn('rounded-md font-medium', TYPE_BADGE_CLASSES[dominantType(variants)] || TYPE_BADGE_CLASSES.other)}>
+              {dominantType(variants)}
+            </Badge>
+          </TableCell>
+          <TableCell>
+            <div className="min-w-8 text-center font-mono font-semibold">{sumQuantity(variants)}</div>
+          </TableCell>
+          <TableCell>
+            <span className="font-mono text-[11px] text-muted-foreground">{latestChange(variants) || '—'}</span>
+          </TableCell>
+          {hasRealSections && (
+            <TableCell>
+              {canMoveItems && (
+                <Select value={variants[0].subsection_id} onValueChange={(value) => moveItem(groupIds, value)}>
+                  <SelectTrigger size="sm" className="h-auto py-1 text-[11px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {sections.map(sec => (
+                      <SelectItem key={sec.id} value={sec.id}>{sec.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </TableCell>
+          )}
+          <TableCell />
+        </TableRow>
+        {expanded && variants.map(variant => renderItemRow(variant, { nested: true }))}
+      </Fragment>
+    )
+  }
+
   function renderTable(sectionItems, emptyMessage) {
     return (
       <Table>
         <TableHeader>
           <TableRow className="hover:bg-transparent">
-            {sortHeader('name', 'name / brand')}
+            {sortHeader('drink_name', 'name / brand')}
             {sortHeader('type', 'type')}
             {sortHeader('quantity', 'quantity', 'w-[130px]')}
             {sortHeader('last_change', 'last change')}
@@ -250,85 +408,9 @@ export default function Inventory({ user, inventory, onSignOut, onInventoryChang
                 {emptyMessage}
               </TableCell>
             </TableRow>
-          ) : sectionItems.map(item => (
-            <TableRow
-              key={item.id}
-              className={fadingOut.has(item.id) ? 'row-pop-out' : fadingIn.has(item.id) ? 'row-pop-in' : undefined}
-              draggable={canMoveItems && hasRealSections}
-              onDragStart={e => {
-                e.dataTransfer.setData(ITEM_DRAG_MIME, item.id)
-                e.dataTransfer.effectAllowed = 'move'
-              }}
-            >
-              <TableCell className="font-medium whitespace-normal">{item.name}</TableCell>
-              <TableCell>
-                <Badge className={cn('rounded-md font-medium', TYPE_BADGE_CLASSES[item.type] || TYPE_BADGE_CLASSES.other)}>
-                  {item.type}
-                </Badge>
-              </TableCell>
-              <TableCell>
-                <div className="flex items-center gap-2">
-                  {canDecreaseQty(role) && (
-                    <button
-                      className="flex h-6.5 w-6.5 items-center justify-center rounded-full border border-input bg-secondary text-base transition-colors hover:border-[var(--border-strong)]"
-                      onClick={() => adjustQty(item, -1)}
-                      aria-label="decrease"
-                    >
-                      −
-                    </button>
-                  )}
-                  <div className="min-w-8 text-center">
-                    <div className="font-mono font-semibold">{item.quantity}</div>
-                    {item.unit && item.unit_size && (
-                      <div className="mt-0.5 font-mono text-[10px] whitespace-nowrap text-muted-foreground">
-                        {item.unit_size} {item.unit}
-                      </div>
-                    )}
-                  </div>
-                  {canIncreaseQty(role) && (
-                    <button
-                      className="flex h-6.5 w-6.5 items-center justify-center rounded-full border border-input bg-secondary text-base transition-colors hover:border-[var(--border-strong)]"
-                      onClick={() => adjustQty(item, 1)}
-                      aria-label="increase"
-                    >
-                      +
-                    </button>
-                  )}
-                </div>
-              </TableCell>
-              <TableCell>
-                <span className="font-mono text-[11px] text-muted-foreground">{item.last_change || '—'}</span>
-              </TableCell>
-              {hasRealSections && (
-                <TableCell>
-                  {canMoveItems && (
-                    <Select value={item.subsection_id} onValueChange={(value) => moveItem(item.id, value)}>
-                      <SelectTrigger size="sm" className="h-auto py-1 text-[11px]">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {sections.map(sec => (
-                          <SelectItem key={sec.id} value={sec.id}>{sec.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
-                </TableCell>
-              )}
-              <TableCell>
-                {canEditDetails(role) && (
-                  <Button variant="outline" size="sm" className="mr-1" onClick={() => setModal({ edit: item })}>
-                    edit
-                  </Button>
-                )}
-                {canDeleteItems(role) && (
-                  <Button variant="outline" size="sm" className="text-destructive" onClick={() => deleteItem(item.id)}>
-                    del
-                  </Button>
-                )}
-              </TableCell>
-            </TableRow>
-          ))}
+          ) : groupItems(sectionItems).map(entry =>
+            entry.kind === 'single' ? renderItemRow(entry.item) : renderGroupRow(entry)
+          )}
         </TableBody>
       </Table>
     )

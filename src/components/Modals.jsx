@@ -39,11 +39,14 @@ function PillButton({ active, children, ...props }) {
 }
 
 export function ItemModal({ item, onSave, onClose }) {
-  const [name, setName] = useState(item?.name || '')
+  const [brand, setBrand] = useState(item?.brand || '')
+  const [drinkName, setDrinkName] = useState(item?.drink_name || '')
+  const [flavor, setFlavor] = useState(item?.flavor || '')
   const [type, setType] = useState(item?.type || 'beer')
   const [qty, setQty] = useState(item?.quantity ?? 1)
   const [unit, setUnit] = useState(item?.unit || 'can')
   const [unitSize, setUnitSize] = useState(item?.unit_size || '12oz')
+  const [error, setError] = useState('')
 
   const [suggestions, setSuggestions] = useState([])
   const [activeSuggestion, setActiveSuggestion] = useState(-1)
@@ -76,7 +79,7 @@ export function ItemModal({ item, onSave, onClose }) {
   }
 
   function handleNameChange(val) {
-    setName(val)
+    setDrinkName(val)
     setActiveSuggestion(-1)
     const results = val.trim().length >= 1 ? searchProducts(val) : []
     setSuggestions(results)
@@ -84,7 +87,7 @@ export function ItemModal({ item, onSave, onClose }) {
   }
 
   function selectSuggestion(product) {
-    setName(product.name)
+    setDrinkName(product.name)
     setType(product.type)
     setUnit(product.defaultUnit)
     setUnitSize(product.defaultSize)
@@ -117,8 +120,18 @@ export function ItemModal({ item, onSave, onClose }) {
   }
 
   function submit() {
-    if (!name.trim()) return
-    onSave({ name: name.trim(), type, quantity: Number(qty), unit, unit_size: unitSize })
+    if (!drinkName.trim()) return
+    if (!brand.trim()) { setError('brand is required'); return }
+    setError('')
+    onSave({
+      brand: brand.trim(),
+      drink_name: drinkName.trim(),
+      flavor: flavor.trim() || null,
+      type,
+      quantity: Number(qty),
+      unit,
+      unit_size: unitSize,
+    })
   }
 
   return (
@@ -129,17 +142,27 @@ export function ItemModal({ item, onSave, onClose }) {
         </DialogHeader>
 
         <div>
-          <FieldLabel>name / brand</FieldLabel>
+          <FieldLabel>brand</FieldLabel>
+          <Input
+            value={brand}
+            autoFocus
+            autoComplete="off"
+            onChange={e => setBrand(e.target.value)}
+            placeholder="e.g. Modelo"
+          />
+        </div>
+
+        <div>
+          <FieldLabel>drink name</FieldLabel>
           <div className="relative">
             <Input
-              value={name}
-              autoFocus
+              value={drinkName}
               autoComplete="off"
               onChange={e => handleNameChange(e.target.value)}
               onKeyDown={handleNameKeyDown}
-              onFocus={() => name.trim().length >= 1 && suggestions.length > 0 && setShowSuggestions(true)}
+              onFocus={() => drinkName.trim().length >= 1 && suggestions.length > 0 && setShowSuggestions(true)}
               onBlur={handleNameBlur}
-              placeholder="e.g. Modelo Especial"
+              placeholder="e.g. Especial"
             />
             {showSuggestions && (
               <div className="absolute inset-x-0 top-full z-20 mt-1 overflow-hidden rounded-lg border border-input bg-popover shadow-lg">
@@ -162,6 +185,16 @@ export function ItemModal({ item, onSave, onClose }) {
               </div>
             )}
           </div>
+        </div>
+
+        <div>
+          <FieldLabel>flavor (optional)</FieldLabel>
+          <Input
+            value={flavor}
+            autoComplete="off"
+            onChange={e => setFlavor(e.target.value)}
+            placeholder="e.g. Black Cherry"
+          />
         </div>
 
         <div>
@@ -215,6 +248,8 @@ export function ItemModal({ item, onSave, onClose }) {
           </div>
         </div>
 
+        {error && <p className="text-xs text-destructive">{error}</p>}
+
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>cancel</Button>
           <Button onClick={submit}>save</Button>
@@ -234,7 +269,9 @@ export function BulkModal({ onSave, onClose }) {
       const rawType = (parts[1] || 'beer').toLowerCase()
       const resolvedType = TYPES.includes(rawType) ? rawType : 'other'
       return {
-        name: parts[0] || 'unknown',
+        brand: null,
+        drink_name: parts[0] || 'unknown',
+        flavor: null,
         type: resolvedType,
         quantity: parseInt(parts[2]) || 1,
         unit: resolvedType === 'liquor' ? 'fifth' : 'can',
@@ -251,7 +288,7 @@ export function BulkModal({ onSave, onClose }) {
           <DialogTitle>bulk add</DialogTitle>
         </DialogHeader>
         <div>
-          <FieldLabel>one item per line: name, type, quantity</FieldLabel>
+          <FieldLabel>one item per line: drink name, type, quantity</FieldLabel>
           <Textarea
             value={text}
             onChange={e => setText(e.target.value)}

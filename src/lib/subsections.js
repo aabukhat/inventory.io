@@ -1,5 +1,8 @@
 import { supabase } from './supabase'
 
+// dataTransfer payload is a JSON-encoded array of drink ids (a single-item
+// drag is an array of length 1) so one move path handles both an
+// individual row and a whole collapsed variant group.
 export const ITEM_DRAG_MIME = 'application/x-drink-id'
 
 function friendlySubsectionError(error) {
@@ -63,9 +66,9 @@ export async function deleteSubsection(id) {
   if (error) throw friendlySubsectionError(error)
 }
 
-export async function moveDrink(drinkId, subsectionId) {
-  const { error } = await supabase.rpc('move_drink', {
-    p_drink_id: drinkId,
+export async function moveDrinks(drinkIds, subsectionId) {
+  const { error } = await supabase.rpc('move_drinks', {
+    p_drink_ids: drinkIds,
     p_subsection_id: subsectionId,
   })
   if (error) throw friendlyMoveError(error)

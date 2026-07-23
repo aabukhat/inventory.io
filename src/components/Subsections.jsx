@@ -85,9 +85,11 @@ export default function Subsections({ inventory, role, sections, itemCounts, onR
     e.preventDefault()
     setDropTargetId(null)
 
-    const drinkId = e.dataTransfer.getData(ITEM_DRAG_MIME)
-    if (drinkId) {
-      await onMoveItem(drinkId, overSec.id)
+    const raw = e.dataTransfer.getData(ITEM_DRAG_MIME)
+    if (raw) {
+      let ids
+      try { ids = JSON.parse(raw) } catch { ids = [raw] }
+      await onMoveItem(ids, overSec.id)
       return
     }
 
