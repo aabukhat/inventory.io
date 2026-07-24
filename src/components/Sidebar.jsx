@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { createSharedInventory } from '../lib/inventories'
 import { initials } from './Avatar'
+import FieldLabel from './FieldLabel'
 import FormError from './FormError'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -130,9 +131,7 @@ export default function Sidebar({ inventories, activeInventory, onSelectInventor
           </DialogHeader>
 
           <div>
-            <label className="mb-1.5 block font-mono text-[11px] tracking-wide text-muted-foreground uppercase">
-              name
-            </label>
+            <FieldLabel>name</FieldLabel>
             <Input
               value={name}
               autoFocus

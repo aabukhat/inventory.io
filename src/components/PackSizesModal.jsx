@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { TYPES } from './Modals'
 import { savePackSizes, resetPackSizes, resolvePackSizes } from '../lib/packSizes'
+import FieldLabel from './FieldLabel'
 import FormError from './FormError'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -66,9 +67,7 @@ export default function PackSizesModal({ inventory, packSizes, onReload, onClose
             return (
               <div key={type}>
                 <div className="mb-1.5 flex items-center justify-between">
-                  <label className="font-mono text-[11px] tracking-wide text-muted-foreground uppercase">
-                    {type}
-                  </label>
+                  <FieldLabel className="mb-0">{type}</FieldLabel>
                   {isCustom && (
                     <button
                       className="font-mono text-[10px] text-muted-foreground underline"

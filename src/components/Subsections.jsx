@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { addSubsection, reorderSubsections, deleteSubsection, ITEM_DRAG_MIME } from '../lib/subsections'
 import { SUBSECTION_PRESETS } from '../lib/subsectionPresets'
 import { canManageSubsections } from '../lib/permissions'
+import FieldLabel from './FieldLabel'
 import FormError from './FormError'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -121,9 +122,7 @@ export default function Subsections({ inventory, role, sections, itemCounts, onR
 
   return (
     <div className="mb-6">
-      <label className="mb-2 block font-mono text-[11px] tracking-wide text-muted-foreground uppercase">
-        sections
-      </label>
+      <FieldLabel className="mb-2">sections</FieldLabel>
       <div className="flex flex-wrap items-stretch gap-2.5">
         {visibleSections.map(sec => (
           <div
