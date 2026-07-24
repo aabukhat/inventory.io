@@ -18,12 +18,12 @@ export default function Landing({ onSelectMode, authenticated = false, onBack })
     <div className="flex min-h-dvh items-center justify-center p-8">
       <div className="grid w-full max-w-[880px] items-center gap-14 md:grid-cols-2">
         <div>
-          <div className="mb-10 font-mono text-[13px] tracking-wide text-primary uppercase">🍺 cellar</div>
+          <div className="mb-10 font-mono text-[13px] tracking-wide text-primary uppercase">🧺 inventory.io</div>
           <h1 className="mb-3 text-[32px] leading-tight font-semibold text-balance">
             Know what's in the fridge before you buy more.
           </h1>
           <p className="mb-8 text-[15px] text-muted-foreground text-pretty">
-            cellar is a shared drink inventory for your household — track what you have, restock the right amount, and never double-buy again.
+            inventory.io is a shared drink inventory for your household — track what you have, restock the right amount, and never double-buy again.
           </p>
           <div className="flex gap-3">
             {authenticated ? (

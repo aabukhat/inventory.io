@@ -50,16 +50,16 @@ export default function Login({ initialMode = 'signin', onBack }) {
             onClick={onBack}
             className="mb-10 cursor-pointer border-none bg-none p-0 font-mono text-[13px] tracking-wide text-primary uppercase"
           >
-            🍺 cellar
+            🧺 inventory.io
           </button>
         ) : (
-          <div className="mb-10 font-mono text-[13px] tracking-wide text-primary uppercase">🍺 cellar</div>
+          <div className="mb-10 font-mono text-[13px] tracking-wide text-primary uppercase">🧺 inventory.io</div>
         )}
         <h1 className="mb-1.5 text-[22px] leading-tight font-semibold">
           {isSignUp ? 'create account' : 'sign in'}
         </h1>
         <p className="mb-8 text-[13px] text-muted-foreground">
-          {isSignUp ? 'set up your cellar account' : 'welcome back'}
+          {isSignUp ? 'set up your inventory.io account' : 'welcome back'}
         </p>
         <form onSubmit={handleSubmit} className="flex flex-col gap-1">
           <Label htmlFor="email" className="mb-1.5 font-mono text-[11px] tracking-wide text-muted-foreground uppercase">
