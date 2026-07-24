@@ -113,6 +113,7 @@ html {
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
   --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
   --color-input: var(--input);
   --color-ring: var(--ring);
   --radius-sm: calc(var(--radius) * 0.6);
@@ -128,6 +129,18 @@ html {
   body {
     @apply bg-background text-foreground;
   }
+  /* Reset form-control typography to inherit by default, same as browsers'
+     UA stylesheets don't. Must live inside @layer base — Tailwind's own
+     utility classes are all in @layer utilities, and unlayered CSS always
+     wins over any @layer regardless of specificity or source order, so
+     this previously defeated every text-size utility applied directly to
+     a button/input/select/textarea (e.g. text-[15px] on an <input> was
+     silently collapsing back to the inherited body font-size). */
+  input, select, textarea, button {
+    font-family: inherit;
+    font-size: inherit;
+    color: inherit;
+  }
 }
 
 body {
@@ -137,12 +150,6 @@ body {
   font-size: 14px;
   line-height: 1.5;
   min-height: 100dvh;
-}
-
-input, select, textarea, button {
-  font-family: inherit;
-  font-size: inherit;
-  color: inherit;
 }
 
 button { cursor: pointer; }

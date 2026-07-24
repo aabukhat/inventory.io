@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { validateDisplayName } from '../lib/displayName'
 import { setDisplayName } from '../lib/profiles'
+import Wordmark from './Wordmark'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -34,7 +35,7 @@ export default function Onboarding({ onDone }) {
   return (
     <div className="flex min-h-dvh items-center justify-center p-8">
       <div className="w-full max-w-[320px]">
-        <div className="mb-10 font-mono text-[13px] tracking-wide text-primary uppercase">🧺 inventory.io</div>
+        <Wordmark className="mb-10" />
         <h1 className="mb-1.5 text-[22px] leading-tight font-semibold">welcome</h1>
         <p className="mb-8 text-[13px] text-muted-foreground">
           what should other members see you as?

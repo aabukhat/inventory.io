@@ -1,6 +1,7 @@
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { TYPE_BADGE_CLASSES } from '../lib/badgeStyles'
+import Wordmark from './Wordmark'
 
 const PREVIEW_ITEMS = [
   { name: 'Sierra Nevada Pale Ale', type: 'beer', qty: 12 },
@@ -13,7 +14,7 @@ export default function Landing({ onSelectMode, authenticated = false, onBack })
     <div className="flex min-h-dvh items-center justify-center p-8">
       <div className="grid w-full max-w-[880px] items-center gap-14 md:grid-cols-2">
         <div>
-          <div className="mb-10 font-mono text-[13px] tracking-wide text-primary uppercase">🧺 inventory.io</div>
+          <Wordmark className="mb-10" />
           <h1 className="mb-3 text-[32px] leading-tight font-semibold text-balance">
             Know what's in the fridge before you buy more.
           </h1>

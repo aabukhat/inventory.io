@@ -128,7 +128,7 @@ export default function Subsections({ inventory, role, sections, itemCounts, onR
           <div
             key={sec.id}
             className={cn(
-              'relative min-w-[120px] cursor-grab rounded-[10px] border bg-card px-3.5 py-2.5 transition-colors',
+              'relative min-w-[120px] cursor-grab rounded-xl border bg-card px-3.5 py-2.5 transition-colors',
               dropTargetId === sec.id ? 'border-primary' : 'border-border',
               dragId === sec.id ? 'opacity-40' : 'opacity-100'
             )}
@@ -158,7 +158,7 @@ export default function Subsections({ inventory, role, sections, itemCounts, onR
         {canManage && (
           <Button
             variant="outline"
-            className="min-w-[120px] rounded-[10px] border-dashed text-muted-foreground"
+            className="min-w-[120px] rounded-xl border-dashed text-muted-foreground"
             onClick={() => { setError(''); setAdding(true) }}
           >
             + add subsection

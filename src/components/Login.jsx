@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { supabase } from '../lib/supabase'
+import Wordmark from './Wordmark'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -44,17 +45,7 @@ export default function Login({ initialMode = 'signin', onBack }) {
   return (
     <div className="flex min-h-dvh items-center justify-center p-8">
       <div className="w-full max-w-[320px]">
-        {onBack ? (
-          <button
-            type="button"
-            onClick={onBack}
-            className="mb-10 cursor-pointer border-none bg-none p-0 font-mono text-[13px] tracking-wide text-primary uppercase"
-          >
-            🧺 inventory.io
-          </button>
-        ) : (
-          <div className="mb-10 font-mono text-[13px] tracking-wide text-primary uppercase">🧺 inventory.io</div>
-        )}
+        <Wordmark onClick={onBack} className="mb-10" />
         <h1 className="mb-1.5 text-[22px] leading-tight font-semibold">
           {isSignUp ? 'create account' : 'sign in'}
         </h1>
@@ -70,7 +61,7 @@ export default function Login({ initialMode = 'signin', onBack }) {
             type="email"
             value={email}
             onChange={e => { setEmail(e.target.value); reset() }}
-            className="mb-4 h-auto py-2.5 text-[15px]"
+            className="mb-4 h-auto py-2.5 text-[15px] md:text-[15px]"
             autoFocus
             autoComplete="email"
             placeholder="you@example.com"
@@ -84,7 +75,7 @@ export default function Login({ initialMode = 'signin', onBack }) {
             type="password"
             value={password}
             onChange={e => { setPassword(e.target.value); reset() }}
-            className="mb-4 h-auto py-2.5 text-[15px]"
+            className="mb-4 h-auto py-2.5 text-[15px] md:text-[15px]"
             autoComplete={isSignUp ? 'new-password' : 'current-password'}
             placeholder="••••••••"
             required

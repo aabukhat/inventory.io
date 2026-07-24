@@ -8,6 +8,7 @@ import ProfileModal from './ProfileModal'
 import Avatar from './Avatar'
 import ThemeToggle from './ThemeToggle'
 import Subsections from './Subsections'
+import Wordmark from './Wordmark'
 import { useSubsections } from '../hooks/useSubsections'
 import { usePackSizes } from '../hooks/usePackSizes'
 import { useFrequentDrinks } from '../hooks/useFrequentDrinks'
@@ -20,7 +21,7 @@ import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
-import { Card } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
@@ -266,7 +267,7 @@ export default function Inventory({ user, profile, inventory, onSignOut, onInven
           <div className="flex items-center gap-2">
             {canDecreaseQty(role) && (
               <button
-                className="flex h-6.5 w-6.5 items-center justify-center rounded-full border border-input bg-secondary text-base transition-colors hover:border-[var(--border-strong)]"
+                className="flex h-6.5 w-6.5 items-center justify-center rounded-full border border-input bg-secondary text-base transition-colors hover:border-border-strong"
                 onClick={() => adjustQty(item, -1, { isVariant: nested })}
                 aria-label="decrease"
               >
@@ -283,7 +284,7 @@ export default function Inventory({ user, profile, inventory, onSignOut, onInven
             </div>
             {canIncreaseQty(role) && (
               <button
-                className="flex h-6.5 w-6.5 items-center justify-center rounded-full border border-input bg-secondary text-base transition-colors hover:border-[var(--border-strong)]"
+                className="flex h-6.5 w-6.5 items-center justify-center rounded-full border border-input bg-secondary text-base transition-colors hover:border-border-strong"
                 onClick={() => adjustQty(item, 1, { isVariant: nested })}
                 aria-label="increase"
               >
@@ -419,13 +420,7 @@ export default function Inventory({ user, profile, inventory, onSignOut, onInven
   return (
     <div className="mx-auto max-w-[940px] px-4 pt-6 pb-12">
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-        <button
-          type="button"
-          onClick={onShowLanding}
-          className="cursor-pointer border-none bg-none p-0 font-mono text-xs tracking-wide text-primary uppercase"
-        >
-          🧺 inventory.io
-        </button>
+        <Wordmark onClick={onShowLanding} />
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           <button
             type="button"
@@ -455,25 +450,35 @@ export default function Inventory({ user, profile, inventory, onSignOut, onInven
       <p className="mb-6 text-[13px] text-muted-foreground">updates live</p>
 
       <div className="mb-6 grid grid-cols-[repeat(auto-fit,minmax(130px,1fr))] gap-2.5">
-        <Card className="gap-1 rounded-[10px] px-3.5 py-3">
-          <div className="font-mono text-[11px] text-muted-foreground">items</div>
-          <div className="text-[22px] font-semibold">{items.length}</div>
+        <Card size="sm">
+          <CardContent className="flex flex-col gap-1">
+            <div className="font-mono text-[11px] text-muted-foreground">items</div>
+            <div className="text-[22px] font-semibold">{items.length}</div>
+          </CardContent>
         </Card>
-        <Card className="gap-1 rounded-[10px] px-3.5 py-3">
-          <div className="font-mono text-[11px] text-muted-foreground">total units</div>
-          <div className="text-[22px] font-semibold">{totalQty}</div>
+        <Card size="sm">
+          <CardContent className="flex flex-col gap-1">
+            <div className="font-mono text-[11px] text-muted-foreground">total units</div>
+            <div className="text-[22px] font-semibold">{totalQty}</div>
+          </CardContent>
         </Card>
-        <Card className="gap-1 rounded-[10px] px-3.5 py-3">
-          <div className="font-mono text-[11px] text-muted-foreground">beers</div>
-          <div className="text-[22px] font-semibold">{beerQty}</div>
+        <Card size="sm">
+          <CardContent className="flex flex-col gap-1">
+            <div className="font-mono text-[11px] text-muted-foreground">beers</div>
+            <div className="text-[22px] font-semibold">{beerQty}</div>
+          </CardContent>
         </Card>
-        <Card className="gap-1 rounded-[10px] px-3.5 py-3">
-          <div className="font-mono text-[11px] text-muted-foreground">seltzers</div>
-          <div className="text-[22px] font-semibold">{seltzQty}</div>
+        <Card size="sm">
+          <CardContent className="flex flex-col gap-1">
+            <div className="font-mono text-[11px] text-muted-foreground">seltzers</div>
+            <div className="text-[22px] font-semibold">{seltzQty}</div>
+          </CardContent>
         </Card>
-        <Card className="gap-1 rounded-[10px] px-3.5 py-3">
-          <div className="font-mono text-[11px] text-muted-foreground">liquor</div>
-          <div className="text-[22px] font-semibold">{liquorQty}</div>
+        <Card size="sm">
+          <CardContent className="flex flex-col gap-1">
+            <div className="font-mono text-[11px] text-muted-foreground">liquor</div>
+            <div className="text-[22px] font-semibold">{liquorQty}</div>
+          </CardContent>
         </Card>
       </div>
 
@@ -490,7 +495,7 @@ export default function Inventory({ user, profile, inventory, onSignOut, onInven
 
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <Input
-          className="min-w-40 flex-1 bg-card text-[13px]"
+          className="min-w-40 flex-1 bg-card text-[13px] md:text-[13px]"
           value={search}
           placeholder="search…"
           onChange={e => setSearch(e.target.value)}

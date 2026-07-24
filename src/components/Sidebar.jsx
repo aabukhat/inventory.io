@@ -19,7 +19,7 @@ function Circle({ active, title, onClick, children }) {
         'rounded-full border text-sm font-semibold transition-colors',
         active
           ? 'border-primary bg-primary text-primary-foreground'
-          : 'border-input bg-secondary text-muted-foreground hover:border-[var(--border-strong)]'
+          : 'border-input bg-secondary text-muted-foreground hover:border-border-strong'
       )}
       onClick={onClick}
       title={title}
@@ -83,7 +83,7 @@ export default function Sidebar({ inventories, activeInventory, onSelectInventor
         </Circle>
       )}
 
-      <div className="h-px w-8 shrink-0 bg-[var(--border-strong)]" />
+      <div className="h-px w-8 shrink-0 bg-border-strong" />
 
       <div className="flex w-full flex-1 flex-col items-center gap-2.5 overflow-y-auto">
         {ownedShared.map(inv => (
