@@ -4,6 +4,13 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* Reserve the vertical scrollbar's gutter unconditionally so switching
+   between a tall and a short inventory (which toggles whether a scrollbar
+   is needed at all) never shifts the whole page laterally. */
+html {
+  scrollbar-gutter: stable;
+}
+
 :root {
   --bg: #0e0e0e;
   --surface: #1a1a1a;
