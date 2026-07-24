@@ -10,6 +10,7 @@ export default function App() {
   const [user, setUser] = useState(null)
   const [ready, setReady] = useState(false)
   const [authView, setAuthView] = useState('landing') // 'landing' | 'signin' | 'signup'
+  const [showLanding, setShowLanding] = useState(false)
   const {
     inventories, activeInventory, setActiveInventoryId, refresh, loading: inventoriesLoading,
   } = useInventories(user)
@@ -38,6 +39,8 @@ export default function App() {
   }
   if (inventoriesLoading || !activeInventory) return null
 
+  if (showLanding) return <Landing authenticated onBack={() => setShowLanding(false)} />
+
   return (
     <div className="flex">
       <Sidebar
@@ -52,6 +55,7 @@ export default function App() {
           inventory={activeInventory}
           onSignOut={handleSignOut}
           onInventoryChanged={refresh}
+          onShowLanding={() => setShowLanding(true)}
         />
       </div>
     </div>

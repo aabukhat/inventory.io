@@ -35,7 +35,7 @@ const TYPE_BADGE_CLASSES = {
   other:   'bg-[rgba(180,180,180,0.1)] text-[#aaa]',
 }
 
-export default function Inventory({ user, inventory, onSignOut, onInventoryChanged }) {
+export default function Inventory({ user, inventory, onSignOut, onInventoryChanged, onShowLanding }) {
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -438,7 +438,13 @@ export default function Inventory({ user, inventory, onSignOut, onInventoryChang
   return (
     <div className="mx-auto max-w-[940px] px-4 pt-6 pb-12">
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-        <div className="font-mono text-xs tracking-wide text-primary uppercase">🧺 inventory.io</div>
+        <button
+          type="button"
+          onClick={onShowLanding}
+          className="cursor-pointer border-none bg-none p-0 font-mono text-xs tracking-wide text-primary uppercase"
+        >
+          🧺 inventory.io
+        </button>
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           <span>{user.email}</span>
           <Button variant="outline" size="sm" className="h-auto px-2 py-0.5 text-[11px]" onClick={onSignOut}>

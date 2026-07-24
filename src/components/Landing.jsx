@@ -13,7 +13,7 @@ const TYPE_BADGE_CLASSES = {
   cider:   'bg-[rgba(245,180,90,0.12)] text-[#f5b45a]',
 }
 
-export default function Landing({ onSelectMode }) {
+export default function Landing({ onSelectMode, authenticated = false, onBack }) {
   return (
     <div className="flex min-h-dvh items-center justify-center p-8">
       <div className="grid w-full max-w-[880px] items-center gap-14 md:grid-cols-2">
@@ -26,12 +26,20 @@ export default function Landing({ onSelectMode }) {
             cellar is a shared drink inventory for your household — track what you have, restock the right amount, and never double-buy again.
           </p>
           <div className="flex gap-3">
-            <Button className="px-5 py-2.5 text-sm" onClick={() => onSelectMode('signup')}>
-              sign up
-            </Button>
-            <Button variant="secondary" className="px-5 py-2.5 text-sm" onClick={() => onSelectMode('signin')}>
-              log in
-            </Button>
+            {authenticated ? (
+              <Button className="px-5 py-2.5 text-sm" onClick={onBack}>
+                back to my inventory
+              </Button>
+            ) : (
+              <>
+                <Button className="px-5 py-2.5 text-sm" onClick={() => onSelectMode('signup')}>
+                  sign up
+                </Button>
+                <Button variant="secondary" className="px-5 py-2.5 text-sm" onClick={() => onSelectMode('signin')}>
+                  log in
+                </Button>
+              </>
+            )}
           </div>
         </div>
 
