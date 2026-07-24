@@ -11,9 +11,16 @@ export function useRealtimeTable({ channelName, table, filter, event = '*', enab
   useEffect(() => {
     if (!enabled) return
     let channel
+    let cancelled = false
 
     async function subscribe() {
       const { data: { session } } = await supabase.auth.getSession()
+      // Effect was cleaned up (deps changed, e.g. a fast inventory switch, or
+      // React StrictMode's dev-only double-invoke) while getSession() was
+      // still in flight — bail out instead of subscribing a channel nothing
+      // will ever clean up, which would collide with the next effect run's
+      // channel of the same name and throw on .on().
+      if (cancelled) return
       if (session?.access_token) supabase.realtime.setAuth(session.access_token)
 
       channel = supabase
@@ -27,6 +34,9 @@ export function useRealtimeTable({ channelName, table, filter, event = '*', enab
     }
 
     subscribe()
-    return () => { if (channel) supabase.removeChannel(channel) }
+    return () => {
+      cancelled = true
+      if (channel) supabase.removeChannel(channel)
+    }
   }, [channelName, table, filter, event, enabled, onEvent])
 }
