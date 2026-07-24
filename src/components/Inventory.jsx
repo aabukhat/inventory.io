@@ -153,10 +153,14 @@ export default function Inventory({ user, inventory, onSignOut, onInventoryChang
     setModal(null)
   }
 
-  async function adjustQty(item, delta) {
+  async function adjustQty(item, delta, { isVariant = false } = {}) {
     const newQty = Math.max(0, item.quantity + delta)
     if (newQty === item.quantity) return
-    if (newQty === 0) {
+    // A variant that's currently part of an expanded group persists at zero
+    // as a re-stock placeholder instead of being deleted — its siblings keep
+    // the group alive, so there's no "empty row" ambiguity the way there
+    // would be for a lone item hitting zero.
+    if (newQty === 0 && !isVariant) {
       setFadingOut(prev => new Set(prev).add(item.id))
       setTimeout(async () => {
         setItems(prev => prev.filter(i => i.id !== item.id))
@@ -247,7 +251,10 @@ export default function Inventory({ user, inventory, onSignOut, onInventoryChang
     return (
       <TableRow
         key={item.id}
-        className={fadingOut.has(item.id) ? 'row-pop-out' : fadingIn.has(item.id) ? 'row-pop-in' : undefined}
+        className={cn(
+          fadingOut.has(item.id) ? 'row-pop-out' : fadingIn.has(item.id) ? 'row-pop-in' : undefined,
+          nested && item.quantity === 0 && 'opacity-50'
+        )}
         draggable={canMoveItems && hasRealSections}
         onDragStart={e => {
           e.dataTransfer.setData(ITEM_DRAG_MIME, JSON.stringify([item.id]))
@@ -267,7 +274,7 @@ export default function Inventory({ user, inventory, onSignOut, onInventoryChang
             {canDecreaseQty(role) && (
               <button
                 className="flex h-6.5 w-6.5 items-center justify-center rounded-full border border-input bg-secondary text-base transition-colors hover:border-[var(--border-strong)]"
-                onClick={() => adjustQty(item, -1)}
+                onClick={() => adjustQty(item, -1, { isVariant: nested })}
                 aria-label="decrease"
               >
                 −
@@ -284,7 +291,7 @@ export default function Inventory({ user, inventory, onSignOut, onInventoryChang
             {canIncreaseQty(role) && (
               <button
                 className="flex h-6.5 w-6.5 items-center justify-center rounded-full border border-input bg-secondary text-base transition-colors hover:border-[var(--border-strong)]"
-                onClick={() => adjustQty(item, 1)}
+                onClick={() => adjustQty(item, 1, { isVariant: nested })}
                 aria-label="increase"
               >
                 +
