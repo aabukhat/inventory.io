@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import Landing from './components/Landing'
 import Login from './components/Login'
 import Inventory from './components/Inventory'
 import Sidebar from './components/Sidebar'
@@ -8,6 +9,7 @@ import { useInventories } from './hooks/useInventories'
 export default function App() {
   const [user, setUser] = useState(null)
   const [ready, setReady] = useState(false)
+  const [authView, setAuthView] = useState('landing') // 'landing' | 'signin' | 'signup'
   const {
     inventories, activeInventory, setActiveInventoryId, refresh, loading: inventoriesLoading,
   } = useInventories(user)
@@ -30,7 +32,10 @@ export default function App() {
   }
 
   if (!ready) return null
-  if (!user) return <Login />
+  if (!user) {
+    if (authView === 'landing') return <Landing onSelectMode={setAuthView} />
+    return <Login initialMode={authView} onBack={() => setAuthView('landing')} />
+  }
   if (inventoriesLoading || !activeInventory) return null
 
   return (

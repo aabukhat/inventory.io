@@ -4,8 +4,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 
-export default function Login() {
-  const [mode, setMode] = useState('signin') // 'signin' | 'signup'
+export default function Login({ initialMode = 'signin', onBack }) {
+  const [mode, setMode] = useState(initialMode) // 'signin' | 'signup'
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -44,7 +44,17 @@ export default function Login() {
   return (
     <div className="flex min-h-dvh items-center justify-center p-8">
       <div className="w-full max-w-[320px]">
-        <div className="mb-10 font-mono text-[13px] tracking-wide text-primary uppercase">🍺 cellar</div>
+        {onBack ? (
+          <button
+            type="button"
+            onClick={onBack}
+            className="mb-10 cursor-pointer border-none bg-none p-0 font-mono text-[13px] tracking-wide text-primary uppercase"
+          >
+            🍺 cellar
+          </button>
+        ) : (
+          <div className="mb-10 font-mono text-[13px] tracking-wide text-primary uppercase">🍺 cellar</div>
+        )}
         <h1 className="mb-1.5 text-[22px] leading-tight font-semibold">
           {isSignUp ? 'create account' : 'sign in'}
         </h1>
