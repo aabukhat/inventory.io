@@ -6,7 +6,7 @@ export async function getMyProfile() {
 
   const { data, error } = await supabase
     .from('profiles')
-    .select('id, email, display_name, display_name_set')
+    .select('id, email, display_name, display_name_set, avatar_url')
     .eq('id', user.id)
     .single()
   if (error) throw error

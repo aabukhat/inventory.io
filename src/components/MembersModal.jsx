@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { listMembers, updateMemberRole, removeMember, renameInventory, deleteInventory } from '../lib/inventories'
 import { supabase } from '../lib/supabase'
 import InviteMemberModal from './InviteMemberModal'
+import Avatar from './Avatar'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -126,6 +127,7 @@ export default function MembersModal({ inventory, onClose, onChanged }) {
                     key={m.user_id}
                     className="flex items-center gap-2 rounded-lg border border-border bg-secondary px-2.5 py-2"
                   >
+                    <Avatar profile={m.profile} size={22} />
                     <span
                       className="flex-1 overflow-hidden text-[13px] text-ellipsis whitespace-nowrap"
                       title={m.profile?.email}

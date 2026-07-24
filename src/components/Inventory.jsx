@@ -5,6 +5,7 @@ import { ItemModal, BulkModal } from './Modals'
 import MembersModal from './MembersModal'
 import PackSizesModal from './PackSizesModal'
 import ProfileModal from './ProfileModal'
+import Avatar from './Avatar'
 import Subsections from './Subsections'
 import { useSubsections } from '../hooks/useSubsections'
 import { usePackSizes } from '../hooks/usePackSizes'
@@ -451,10 +452,11 @@ export default function Inventory({ user, profile, inventory, onSignOut, onInven
           <button
             type="button"
             onClick={() => setManagingProfile(true)}
-            className="cursor-pointer border-none bg-none p-0 text-xs text-muted-foreground underline decoration-dotted underline-offset-2 hover:text-foreground"
+            className="flex cursor-pointer items-center gap-1.5 border-none bg-none p-0 text-xs text-muted-foreground hover:text-foreground"
             title={user.email}
           >
-            {displayName()}
+            <Avatar profile={profile} size={20} />
+            <span className="underline decoration-dotted underline-offset-2">{displayName()}</span>
           </button>
           <Button variant="outline" size="sm" className="h-auto px-2 py-0.5 text-[11px]" onClick={onSignOut}>
             sign out
