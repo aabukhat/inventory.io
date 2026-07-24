@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils'
 export default function Wordmark({ onClick, className }) {
   const classes = cn(
     'font-mono text-[13px] tracking-wide text-primary uppercase',
-    onClick && 'cursor-pointer border-none bg-none p-0',
+    onClick && 'border-none bg-none p-0',
     className
   )
 

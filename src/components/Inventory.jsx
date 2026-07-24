@@ -425,7 +425,7 @@ export default function Inventory({ user, profile, inventory, onSignOut, onInven
           <button
             type="button"
             onClick={() => setManagingProfile(true)}
-            className="flex cursor-pointer items-center gap-1.5 border-none bg-none p-0 text-xs text-muted-foreground hover:text-foreground"
+            className="flex items-center gap-1.5 border-none bg-none p-0 text-xs text-muted-foreground hover:text-foreground"
             title={user.email}
           >
             <Avatar profile={profile} size={20} />

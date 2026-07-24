@@ -27,7 +27,7 @@ function PillButton({ active, children, ...props }) {
   return (
     <button
       className={cn(
-        'cursor-pointer rounded-lg border px-3 py-1.5 text-xs whitespace-nowrap transition-colors',
+        'rounded-lg border px-3 py-1.5 text-xs whitespace-nowrap transition-colors',
         active
           ? 'border-primary bg-primary/10 font-semibold text-primary'
           : 'border-input bg-secondary font-normal text-muted-foreground'

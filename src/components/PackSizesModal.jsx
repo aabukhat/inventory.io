@@ -70,7 +70,7 @@ export default function PackSizesModal({ inventory, packSizes, onReload, onClose
                   </label>
                   {isCustom && (
                     <button
-                      className="cursor-pointer font-mono text-[10px] text-muted-foreground underline"
+                      className="font-mono text-[10px] text-muted-foreground underline"
                       onClick={() => reset(type)}
                     >
                       reset to default
@@ -79,7 +79,7 @@ export default function PackSizesModal({ inventory, packSizes, onReload, onClose
                 </div>
                 <div className="flex flex-wrap items-center gap-1.5">
                   {sizes.length === 0 && (
-                    <span className="text-[12px] text-muted-foreground">no pack buttons</span>
+                    <span className="text-[11px] text-muted-foreground">no pack buttons</span>
                   )}
                   {sizes.map(n => (
                     <span
@@ -88,7 +88,7 @@ export default function PackSizesModal({ inventory, packSizes, onReload, onClose
                     >
                       +{n}
                       <button
-                        className="cursor-pointer text-muted-foreground"
+                        className="text-muted-foreground"
                         onClick={() => removeSize(type, n)}
                         aria-label={`remove ${n}`}
                       >

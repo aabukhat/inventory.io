@@ -88,7 +88,7 @@ export default function Login({ initialMode = 'signin', onBack }) {
         </form>
         <p className="mt-6 text-center text-xs text-muted-foreground">
           {isSignUp ? 'already have an account? ' : "don't have an account? "}
-          <button className="cursor-pointer border-none bg-none p-0 text-xs text-primary underline" onClick={switchMode}>
+          <button className="border-none bg-none p-0 text-xs text-primary underline" onClick={switchMode}>
             {isSignUp ? 'sign in' : 'sign up'}
           </button>
         </p>
