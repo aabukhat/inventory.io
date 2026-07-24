@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react'
 import Landing from './components/Landing'
 import Login from './components/Login'
+import Onboarding from './components/Onboarding'
 import Inventory from './components/Inventory'
 import Sidebar from './components/Sidebar'
 import { supabase } from './lib/supabase'
 import { useInventories } from './hooks/useInventories'
+import { useProfile } from './hooks/useProfile'
 
 export default function App() {
   const [user, setUser] = useState(null)
@@ -14,6 +16,7 @@ export default function App() {
   const {
     inventories, activeInventory, setActiveInventoryId, refresh, loading: inventoriesLoading,
   } = useInventories(user)
+  const { profile, refresh: refreshProfile, loading: profileLoading } = useProfile(user)
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
@@ -37,7 +40,9 @@ export default function App() {
     if (authView === 'landing') return <Landing onSelectMode={setAuthView} />
     return <Login initialMode={authView} onBack={() => setAuthView('landing')} />
   }
-  if (inventoriesLoading || !activeInventory) return null
+  if (inventoriesLoading || !activeInventory || profileLoading || !profile) return null
+
+  if (!profile.display_name_set) return <Onboarding onDone={refreshProfile} />
 
   if (showLanding) return <Landing authenticated onBack={() => setShowLanding(false)} />
 
@@ -52,10 +57,12 @@ export default function App() {
       <div className="flex-1 min-w-0">
         <Inventory
           user={user}
+          profile={profile}
           inventory={activeInventory}
           onSignOut={handleSignOut}
           onInventoryChanged={refresh}
           onShowLanding={() => setShowLanding(true)}
+          onProfileChanged={refreshProfile}
         />
       </div>
     </div>

@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase'
 import { ItemModal, BulkModal } from './Modals'
 import MembersModal from './MembersModal'
 import PackSizesModal from './PackSizesModal'
+import ProfileModal from './ProfileModal'
 import Subsections from './Subsections'
 import { useSubsections } from '../hooks/useSubsections'
 import { usePackSizes } from '../hooks/usePackSizes'
@@ -35,7 +36,7 @@ const TYPE_BADGE_CLASSES = {
   other:   'bg-[rgba(180,180,180,0.1)] text-[#aaa]',
 }
 
-export default function Inventory({ user, inventory, onSignOut, onInventoryChanged, onShowLanding }) {
+export default function Inventory({ user, profile, inventory, onSignOut, onInventoryChanged, onShowLanding, onProfileChanged }) {
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -43,6 +44,7 @@ export default function Inventory({ user, inventory, onSignOut, onInventoryChang
   const [modal, setModal] = useState(null) // null | 'add' | 'bulk' | {edit: item}
   const [managingMembers, setManagingMembers] = useState(false)
   const [managingPackSizes, setManagingPackSizes] = useState(false)
+  const [managingProfile, setManagingProfile] = useState(false)
   const [fadingOut, setFadingOut] = useState(new Set())
   const [fadingIn, setFadingIn] = useState(new Set())
   const [expandedGroups, setExpandedGroups] = useState(new Set())
@@ -123,7 +125,7 @@ export default function Inventory({ user, inventory, onSignOut, onInventoryChang
   }, [inventory.id])
 
   function displayName() {
-    return user.email?.split('@')[0] ?? 'user'
+    return profile?.display_name || user.email?.split('@')[0] || 'user'
   }
 
   async function addItem(fields) {
@@ -446,7 +448,14 @@ export default function Inventory({ user, inventory, onSignOut, onInventoryChang
           🧺 inventory.io
         </button>
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          <span>{user.email}</span>
+          <button
+            type="button"
+            onClick={() => setManagingProfile(true)}
+            className="cursor-pointer border-none bg-none p-0 text-xs text-muted-foreground underline decoration-dotted underline-offset-2 hover:text-foreground"
+            title={user.email}
+          >
+            {displayName()}
+          </button>
           <Button variant="outline" size="sm" className="h-auto px-2 py-0.5 text-[11px]" onClick={onSignOut}>
             sign out
           </Button>
@@ -579,6 +588,13 @@ export default function Inventory({ user, inventory, onSignOut, onInventoryChang
           packSizes={packSizes}
           onReload={reloadPackSizes}
           onClose={() => setManagingPackSizes(false)}
+        />
+      )}
+      {managingProfile && (
+        <ProfileModal
+          profile={profile}
+          onClose={() => setManagingProfile(false)}
+          onChanged={onProfileChanged}
         />
       )}
     </div>

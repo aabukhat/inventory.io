@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { listMembers, updateMemberRole, removeMember, renameInventory, deleteInventory } from '../lib/inventories'
+import { supabase } from '../lib/supabase'
 import InviteMemberModal from './InviteMemberModal'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -28,6 +29,29 @@ export default function MembersModal({ inventory, onClose, onChanged }) {
   }, [inventory.id])
 
   useEffect(() => { load() }, [load])
+
+  // Other members' display names can change while this modal is open (e.g.
+  // someone finishes onboarding elsewhere) — keep the list live.
+  useEffect(() => {
+    let channel
+
+    async function subscribe() {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session?.access_token) supabase.realtime.setAuth(session.access_token)
+
+      channel = supabase
+        .channel(`members-profiles-changes-${inventory.id}`)
+        .on('postgres_changes', {
+          event: 'UPDATE', schema: 'public', table: 'profiles',
+        }, () => { load() })
+        .subscribe((status, err) => {
+          if (status === 'CHANNEL_ERROR') console.error('[realtime] channel error', err)
+        })
+    }
+
+    subscribe()
+    return () => { if (channel) supabase.removeChannel(channel) }
+  }, [inventory.id, load])
 
   async function handleRoleChange(userId, role) {
     await updateMemberRole(inventory.id, userId, role)
@@ -102,8 +126,11 @@ export default function MembersModal({ inventory, onClose, onChanged }) {
                     key={m.user_id}
                     className="flex items-center gap-2 rounded-lg border border-border bg-secondary px-2.5 py-2"
                   >
-                    <span className="flex-1 overflow-hidden text-[13px] text-ellipsis whitespace-nowrap">
-                      {m.profile?.email || m.user_id}
+                    <span
+                      className="flex-1 overflow-hidden text-[13px] text-ellipsis whitespace-nowrap"
+                      title={m.profile?.email}
+                    >
+                      {m.profile?.display_name || m.profile?.email || m.user_id}
                     </span>
                     {m.role === 'owner' ? (
                       <span className="font-mono text-[11px] tracking-wide text-primary uppercase">owner</span>
