@@ -73,7 +73,7 @@ export async function listMembers(inventoryId) {
 
   const { data: profiles, error: profilesError } = await supabase
     .from('profiles')
-    .select('id, email, display_name, avatar_url')
+    .select('id, email, display_name, avatar_url, favorite_color')
     .in('id', members.map(m => m.user_id))
   if (profilesError) throw profilesError
 

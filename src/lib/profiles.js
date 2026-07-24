@@ -6,7 +6,7 @@ export async function getMyProfile() {
 
   const { data, error } = await supabase
     .from('profiles')
-    .select('id, email, display_name, display_name_set, avatar_url')
+    .select('id, email, display_name, display_name_set, avatar_url, favorite_color')
     .eq('id', user.id)
     .single()
   if (error) throw error
@@ -23,4 +23,9 @@ function friendlyDisplayNameError(error) {
 export async function setDisplayName(name) {
   const { error } = await supabase.rpc('set_display_name', { p_display_name: name })
   if (error) throw friendlyDisplayNameError(error)
+}
+
+export async function setFavoriteColor(token) {
+  const { error } = await supabase.rpc('set_favorite_color', { p_color: token })
+  if (error) throw error
 }

@@ -1,8 +1,10 @@
 import { useState, useRef, useEffect } from 'react'
 import { validateDisplayName } from '../lib/displayName'
-import { setDisplayName } from '../lib/profiles'
+import { setDisplayName, setFavoriteColor } from '../lib/profiles'
 import { validateAvatarFile, uploadAvatar, removeAvatar } from '../lib/avatar'
+import { COLOR_PALETTE } from '../lib/colorPalette'
 import Avatar from './Avatar'
+import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -12,6 +14,7 @@ import {
 
 export default function ProfileModal({ profile, onClose, onChanged }) {
   const [name, setName] = useState(profile.display_name || '')
+  const [color, setColor] = useState(profile.favorite_color || null)
   const [avatarFile, setAvatarFile] = useState(null)
   const [avatarPreviewUrl, setAvatarPreviewUrl] = useState(null)
   const [removeRequested, setRemoveRequested] = useState(false)
@@ -60,6 +63,7 @@ export default function ProfileModal({ profile, onClose, onChanged }) {
     setError('')
     try {
       if (cleaned !== profile.display_name) await setDisplayName(cleaned)
+      if (color && color !== profile.favorite_color) await setFavoriteColor(color)
       if (avatarFile) await uploadAvatar(avatarFile)
       else if (removeRequested) await removeAvatar()
       await onChanged?.()
@@ -83,7 +87,10 @@ export default function ProfileModal({ profile, onClose, onChanged }) {
           {avatarPreviewUrl ? (
             <img src={avatarPreviewUrl} alt="" className="size-16 shrink-0 rounded-full object-cover" />
           ) : (
-            <Avatar profile={{ ...profile, avatar_url: removeRequested ? null : profile.avatar_url }} size={64} />
+            <Avatar
+              profile={{ ...profile, avatar_url: removeRequested ? null : profile.avatar_url, favorite_color: color }}
+              size={64}
+            />
           )}
           <div className="flex flex-col gap-1.5">
             <input
@@ -101,6 +108,29 @@ export default function ProfileModal({ profile, onClose, onChanged }) {
                 remove photo
               </Button>
             )}
+          </div>
+        </div>
+
+        <div>
+          <Label className="mb-1.5 font-mono text-[11px] tracking-wide text-muted-foreground uppercase">
+            favorite color
+          </Label>
+          <div className="flex flex-wrap gap-2">
+            {COLOR_PALETTE.map(c => (
+              <button
+                key={c.token}
+                type="button"
+                onClick={() => setColor(c.token)}
+                title={c.token}
+                aria-label={c.token}
+                aria-pressed={color === c.token}
+                className={cn(
+                  'size-6 shrink-0 cursor-pointer rounded-full ring-offset-2 ring-offset-card transition-shadow',
+                  color === c.token ? 'ring-2 ring-foreground' : 'hover:ring-2 hover:ring-border'
+                )}
+                style={{ backgroundColor: c.hex }}
+              />
+            ))}
           </div>
         </div>
 
