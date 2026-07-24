@@ -94,6 +94,21 @@ html {
   --accent-foreground: #fdfcfb;
 }
 
+/* Favorite-color accent override. App.jsx sets --accent-pick inline on
+   <html> to the signed-in user's favorite_color hex (colorPalette.js is
+   the only place those hex values live — nothing is duplicated here) and
+   a data-accent attribute alongside it. Dark mode uses the picked hex
+   directly, same as how avatars already render it; light mode darkens it
+   via color-mix so it still has enough contrast against the light page
+   background — the same reason the *default* accent above is already a
+   deeper purple in light mode than in dark mode. */
+:root[data-accent] {
+  --accent: var(--accent-pick);
+}
+:root[data-theme="light"][data-accent] {
+  --accent: color-mix(in oklch, var(--accent-pick), black 25%);
+}
+
 @theme inline {
   --font-sans: var(--font-sans);
   --font-mono: var(--font-mono);
