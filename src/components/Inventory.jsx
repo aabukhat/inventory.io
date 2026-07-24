@@ -3,8 +3,10 @@ import { ChevronRightIcon, ChevronDownIcon } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { ItemModal, BulkModal } from './Modals'
 import MembersModal from './MembersModal'
+import PackSizesModal from './PackSizesModal'
 import Subsections from './Subsections'
 import { useSubsections } from '../hooks/useSubsections'
+import { usePackSizes } from '../hooks/usePackSizes'
 import { moveDrinks, ITEM_DRAG_MIME } from '../lib/subsections'
 import { groupItems, dominantType, sumQuantity, latestChange, parseLastChange } from '../lib/variantGrouping'
 import { cn } from '@/lib/utils'
@@ -20,6 +22,7 @@ import {
 } from '@/components/ui/table'
 import {
   canAddItems, canIncreaseQty, canDecreaseQty, canEditDetails, canDeleteItems, canManageMembers,
+  canManagePackSizes,
 } from '../lib/permissions'
 
 const TYPE_BADGE_CLASSES = {
@@ -37,6 +40,7 @@ export default function Inventory({ user, inventory, onSignOut, onInventoryChang
   const [filterType, setFilterType] = useState('')
   const [modal, setModal] = useState(null) // null | 'add' | 'bulk' | {edit: item}
   const [managingMembers, setManagingMembers] = useState(false)
+  const [managingPackSizes, setManagingPackSizes] = useState(false)
   const [fadingOut, setFadingOut] = useState(new Set())
   const [fadingIn, setFadingIn] = useState(new Set())
   const [expandedGroups, setExpandedGroups] = useState(new Set())
@@ -46,6 +50,7 @@ export default function Inventory({ user, inventory, onSignOut, onInventoryChang
 
   const role = inventory.role
   const { sections, reload: reloadSections } = useSubsections(inventory.id)
+  const { packSizes, reload: reloadPackSizes } = usePackSizes(inventory.id)
   const uncategorized = sections.find(sec => sec.is_uncategorized)
   const hasRealSections = sections.some(sec => !sec.is_uncategorized)
 
@@ -440,6 +445,9 @@ export default function Inventory({ user, inventory, onSignOut, onInventoryChang
         {inventory.type === 'shared' && canManageMembers(role) && (
           <Button variant="outline" size="sm" onClick={() => setManagingMembers(true)}>manage</Button>
         )}
+        {canManagePackSizes(role) && (
+          <Button variant="outline" size="sm" onClick={() => setManagingPackSizes(true)}>pack sizes</Button>
+        )}
       </div>
       <p className="mb-6 text-[13px] text-muted-foreground">updates live</p>
 
@@ -532,7 +540,7 @@ export default function Inventory({ user, inventory, onSignOut, onInventoryChang
       )}
 
       {modal === 'add' && (
-        <ItemModal onSave={addItem} onClose={() => setModal(null)} />
+        <ItemModal onSave={addItem} onClose={() => setModal(null)} packSizes={packSizes} />
       )}
       {modal === 'bulk' && (
         <BulkModal onSave={bulkAdd} onClose={() => setModal(null)} />
@@ -542,6 +550,7 @@ export default function Inventory({ user, inventory, onSignOut, onInventoryChang
           item={modal.edit}
           onSave={fields => updateItem(modal.edit.id, { ...fields, last_change: `${displayName()} edited · ${now()}` })}
           onClose={() => setModal(null)}
+          packSizes={packSizes}
         />
       )}
       {managingMembers && (
@@ -549,6 +558,14 @@ export default function Inventory({ user, inventory, onSignOut, onInventoryChang
           inventory={inventory}
           onClose={() => setManagingMembers(false)}
           onChanged={onInventoryChanged}
+        />
+      )}
+      {managingPackSizes && (
+        <PackSizesModal
+          inventory={inventory}
+          packSizes={packSizes}
+          onReload={reloadPackSizes}
+          onClose={() => setManagingPackSizes(false)}
         />
       )}
     </div>

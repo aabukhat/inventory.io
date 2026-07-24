@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { searchProducts, CAN_SIZES, BOTTLE_SIZES, LIQUOR_UNITS, LIQUOR_UNIT_SIZE_MAP } from '../lib/products'
+import { resolvePackSizes } from '../lib/packSizes'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -12,7 +13,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from '@/components/ui/dialog'
 
-const TYPES = ['beer', 'seltzer', 'cider', 'liquor', 'other']
+export const TYPES = ['beer', 'seltzer', 'cider', 'liquor', 'other']
 
 function FieldLabel({ children }) {
   return (
@@ -38,7 +39,7 @@ function PillButton({ active, children, ...props }) {
   )
 }
 
-export function ItemModal({ item, onSave, onClose }) {
+export function ItemModal({ item, onSave, onClose, packSizes = {} }) {
   const [brand, setBrand] = useState(item?.brand || '')
   const [drinkName, setDrinkName] = useState(item?.drink_name || '')
   const [flavor, setFlavor] = useState(item?.flavor || '')
@@ -54,6 +55,7 @@ export function ItemModal({ item, onSave, onClose }) {
 
   const isLiquor = type === 'liquor'
   const sizes = isLiquor ? Object.values(LIQUOR_UNIT_SIZE_MAP) : (unit === 'can' ? CAN_SIZES : BOTTLE_SIZES)
+  const packSizeOptions = resolvePackSizes(packSizes, type)
 
   // When unit or type changes, ensure unitSize is valid for the current context
   useEffect(() => {
@@ -246,6 +248,15 @@ export function ItemModal({ item, onSave, onClose }) {
               </>
             )}
           </div>
+          {packSizeOptions.length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {packSizeOptions.map(n => (
+                <PillButton key={n} active={Number(qty) === n} onClick={() => setQty(n)}>
+                  +{n}
+                </PillButton>
+              ))}
+            </div>
+          )}
         </div>
 
         {error && <p className="text-xs text-destructive">{error}</p>}
