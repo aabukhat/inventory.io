@@ -91,7 +91,7 @@ export default function Sidebar({ inventories, activeInventory, onSelectInventor
             onClick={() => onSelectInventory(inv.id)}
             title={`${inv.name} — owned by you`}
           >
-            {initials(inv.name)}
+            {inv.emoji || initials(inv.name)}
           </Circle>
         ))}
 
@@ -106,7 +106,7 @@ export default function Sidebar({ inventories, activeInventory, onSelectInventor
               onClick={() => onSelectInventory(inv.id)}
               title={`${inv.name} — shared with you (${inv.role})`}
             >
-              {initials(inv.name)}
+              {inv.emoji || initials(inv.name)}
             </Circle>
             <span className="absolute -right-0.5 -bottom-0.5 h-2.5 w-2.5 rounded-full border-2 border-[var(--surface)] bg-[var(--text-dim)]" />
           </div>

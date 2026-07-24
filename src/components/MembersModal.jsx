@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { listMembers, updateMemberRole, removeMember, renameInventory, deleteInventory } from '../lib/inventories'
+import { listMembers, updateMemberRole, removeMember, renameInventory, setInventoryEmoji, deleteInventory } from '../lib/inventories'
 import { useRealtimeTable } from '../hooks/useRealtimeTable'
 import InviteMemberModal from './InviteMemberModal'
 import Avatar from './Avatar'
@@ -21,6 +21,7 @@ export default function MembersModal({ inventory, onClose, onChanged }) {
   const [loading, setLoading] = useState(true)
   const [inviting, setInviting] = useState(false)
   const [name, setName] = useState(inventory.name)
+  const [emoji, setEmoji] = useState(inventory.emoji || '')
   const [error, setError] = useState('')
 
   const load = useCallback(async () => {
@@ -62,6 +63,18 @@ export default function MembersModal({ inventory, onClose, onChanged }) {
     }
   }
 
+  async function handleSaveEmoji() {
+    const trimmed = emoji.trim()
+    if (trimmed === (inventory.emoji || '')) return
+    setError('')
+    try {
+      await setInventoryEmoji(inventory.id, trimmed)
+      onChanged?.()
+    } catch (err) {
+      setError(err.message)
+    }
+  }
+
   async function handleDelete() {
     if (!confirm(`delete "${inventory.name}"? this removes it for everyone.`)) return
     setError('')
@@ -81,6 +94,21 @@ export default function MembersModal({ inventory, onClose, onChanged }) {
           <DialogHeader>
             <DialogTitle>manage "{inventory.name}"</DialogTitle>
           </DialogHeader>
+
+          <div>
+            <FieldLabel>icon</FieldLabel>
+            <div className="flex gap-2">
+              <Input
+                className="w-16 text-center text-base"
+                value={emoji}
+                onChange={e => setEmoji(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleSaveEmoji()}
+                placeholder="🍺"
+                maxLength={8}
+              />
+              <Button variant="outline" size="sm" onClick={handleSaveEmoji}>save</Button>
+            </div>
+          </div>
 
           <div>
             <FieldLabel>rename</FieldLabel>
