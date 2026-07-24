@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { supabase } from '../lib/supabase'
 import Wordmark from './Wordmark'
 import FieldLabel from './FieldLabel'
+import FormError from './FormError'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 
@@ -79,7 +80,7 @@ export default function Login({ initialMode = 'signin', onBack }) {
           <Button type="submit" className="w-full py-2.5 text-sm" disabled={loading}>
             {loading ? '…' : isSignUp ? 'create account' : 'sign in'}
           </Button>
-          {error && <p className="mt-3 text-center text-xs text-destructive">{error}</p>}
+          <FormError className="mt-3 text-center">{error}</FormError>
           {message && <p className="mt-3 text-center text-xs text-primary">{message}</p>}
         </form>
         <p className="mt-6 text-center text-xs text-muted-foreground">

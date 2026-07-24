@@ -2,7 +2,7 @@ import { avatarPublicUrl } from '../lib/avatar'
 import { avatarColor } from '../lib/colorPalette'
 import { cn } from '@/lib/utils'
 
-function initials(name) {
+export function initials(name) {
   return (name || '?').trim().charAt(0).toUpperCase()
 }
 

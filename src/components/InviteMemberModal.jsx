@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { inviteMember } from '../lib/inventories'
 import FieldLabel from './FieldLabel'
+import FormError from './FormError'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -64,7 +65,7 @@ export default function InviteMemberModal({ inventoryId, onClose, onInvited }) {
           </Select>
         </div>
 
-        {error && <p className="text-xs text-destructive">{error}</p>}
+        <FormError>{error}</FormError>
 
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>cancel</Button>

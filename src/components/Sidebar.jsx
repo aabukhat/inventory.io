@@ -1,15 +1,13 @@
 import { useState } from 'react'
 import { createSharedInventory } from '../lib/inventories'
+import { initials } from './Avatar'
+import FormError from './FormError'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from '@/components/ui/dialog'
-
-function initials(name) {
-  return (name || '?').trim().charAt(0).toUpperCase()
-}
 
 function Circle({ active, title, onClick, children }) {
   return (
@@ -142,7 +140,7 @@ export default function Sidebar({ inventories, activeInventory, onSelectInventor
               onKeyDown={e => e.key === 'Enter' && handleCreate()}
               placeholder="e.g. Household"
             />
-            {error && <p className="mt-2 text-xs text-destructive">{error}</p>}
+            <FormError className="mt-2">{error}</FormError>
           </div>
 
           <DialogFooter>

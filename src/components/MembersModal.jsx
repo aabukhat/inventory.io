@@ -4,6 +4,7 @@ import { useRealtimeTable } from '../hooks/useRealtimeTable'
 import InviteMemberModal from './InviteMemberModal'
 import Avatar from './Avatar'
 import FieldLabel from './FieldLabel'
+import FormError from './FormError'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -149,7 +150,7 @@ export default function MembersModal({ inventory, onClose, onChanged }) {
             </Button>
           )}
 
-          {error && <p className="text-xs text-destructive">{error}</p>}
+          <FormError>{error}</FormError>
         </DialogContent>
       </Dialog>
 

@@ -3,6 +3,7 @@ import { validateDisplayName } from '../lib/displayName'
 import { setDisplayName } from '../lib/profiles'
 import Wordmark from './Wordmark'
 import FieldLabel from './FieldLabel'
+import FormError from './FormError'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 
@@ -56,7 +57,7 @@ export default function Onboarding({ onDone }) {
           <Button type="submit" className="w-full py-2.5 text-sm" disabled={saving}>
             {saving ? '…' : 'continue'}
           </Button>
-          {error && <p className="mt-3 text-center text-xs text-destructive">{error}</p>}
+          <FormError className="mt-3 text-center">{error}</FormError>
         </form>
       </div>
     </div>

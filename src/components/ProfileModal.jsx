@@ -6,6 +6,7 @@ import { COLOR_PALETTE } from '../lib/colorPalette'
 import Avatar from './Avatar'
 import ThemeToggle from './ThemeToggle'
 import FieldLabel from './FieldLabel'
+import FormError from './FormError'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -161,7 +162,7 @@ export default function ProfileModal({ profile, onClose, onChanged }) {
           />
         </div>
 
-        {error && <p className="text-xs text-destructive">{error}</p>}
+        <FormError>{error}</FormError>
 
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>cancel</Button>

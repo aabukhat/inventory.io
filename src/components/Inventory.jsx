@@ -9,6 +9,7 @@ import Avatar from './Avatar'
 import ThemeToggle from './ThemeToggle'
 import Subsections from './Subsections'
 import Wordmark from './Wordmark'
+import FormError from './FormError'
 import { useSubsections } from '../hooks/useSubsections'
 import { usePackSizes } from '../hooks/usePackSizes'
 import { useFrequentDrinks } from '../hooks/useFrequentDrinks'
@@ -491,7 +492,7 @@ export default function Inventory({ user, profile, inventory, onSignOut, onInven
         onMoveItem={moveItem}
       />
 
-      {moveError && <p className="mb-4 text-xs text-destructive">{moveError}</p>}
+      <FormError className="mb-4">{moveError}</FormError>
 
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <Input

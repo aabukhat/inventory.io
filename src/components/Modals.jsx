@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { searchProducts, CAN_SIZES, BOTTLE_SIZES, LIQUOR_UNITS, LIQUOR_UNIT_SIZE_MAP } from '../lib/products'
 import { resolvePackSizes } from '../lib/packSizes'
 import FieldLabel from './FieldLabel'
+import FormError from './FormError'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -273,7 +274,7 @@ export function ItemModal({ item, onSave, onClose, packSizes = {}, frequentDrink
           )}
         </div>
 
-        {error && <p className="text-xs text-destructive">{error}</p>}
+        <FormError>{error}</FormError>
 
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>cancel</Button>

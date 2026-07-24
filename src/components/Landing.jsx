@@ -1,5 +1,6 @@
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Card, CardContent } from '@/components/ui/card'
 import { TYPE_BADGE_CLASSES } from '../lib/badgeStyles'
 import Wordmark from './Wordmark'
 
@@ -39,29 +40,28 @@ export default function Landing({ onSelectMode, authenticated = false, onBack })
           </div>
         </div>
 
-        <div
-          className="rounded-xl bg-card p-4 ring-1 ring-foreground/10"
-          aria-hidden="true"
-        >
-          <div className="mb-3 flex items-center justify-between">
-            <span className="font-mono text-[11px] tracking-wide text-muted-foreground uppercase">home bar</span>
-            <span className="font-mono text-[11px] text-muted-foreground">{PREVIEW_ITEMS.length} drinks</span>
-          </div>
-          <div className="flex flex-col gap-1.5">
-            {PREVIEW_ITEMS.map(item => (
-              <div
-                key={item.name}
-                className="flex items-center justify-between rounded-lg bg-secondary px-3 py-2.5"
-              >
-                <div className="flex items-center gap-2 min-w-0">
-                  <Badge className={TYPE_BADGE_CLASSES[item.type]}>{item.type}</Badge>
-                  <span className="truncate text-[13px]">{item.name}</span>
+        <Card aria-hidden="true">
+          <CardContent>
+            <div className="mb-3 flex items-center justify-between">
+              <span className="font-mono text-[11px] tracking-wide text-muted-foreground uppercase">home bar</span>
+              <span className="font-mono text-[11px] text-muted-foreground">{PREVIEW_ITEMS.length} drinks</span>
+            </div>
+            <div className="flex flex-col gap-1.5">
+              {PREVIEW_ITEMS.map(item => (
+                <div
+                  key={item.name}
+                  className="flex items-center justify-between rounded-lg bg-secondary px-3 py-2.5"
+                >
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Badge className={TYPE_BADGE_CLASSES[item.type]}>{item.type}</Badge>
+                    <span className="truncate text-[13px]">{item.name}</span>
+                  </div>
+                  <span className="font-mono text-[13px] text-muted-foreground">{item.qty}</span>
                 </div>
-                <span className="font-mono text-[13px] text-muted-foreground">{item.qty}</span>
-              </div>
-            ))}
-          </div>
-        </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   )

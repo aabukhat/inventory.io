@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { addSubsection, reorderSubsections, deleteSubsection, ITEM_DRAG_MIME } from '../lib/subsections'
 import { SUBSECTION_PRESETS } from '../lib/subsectionPresets'
 import { canManageSubsections } from '../lib/permissions'
+import FormError from './FormError'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -166,7 +167,7 @@ export default function Subsections({ inventory, role, sections, itemCounts, onR
         )}
       </div>
 
-      {error && !adding && <p className="mt-2 text-xs text-destructive">{error}</p>}
+      {!adding && <FormError className="mt-2">{error}</FormError>}
 
       <Dialog open={adding} onOpenChange={(open) => !open && closeAdd()}>
         <DialogContent className="sm:max-w-[320px]">
@@ -202,7 +203,7 @@ export default function Subsections({ inventory, role, sections, itemCounts, onR
             <Button variant="outline" onClick={handleAddCustom}>add</Button>
           </div>
 
-          {error && <p className="text-xs text-destructive">{error}</p>}
+          <FormError>{error}</FormError>
         </DialogContent>
       </Dialog>
     </div>

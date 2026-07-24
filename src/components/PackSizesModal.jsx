@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { TYPES } from './Modals'
 import { savePackSizes, resetPackSizes, resolvePackSizes } from '../lib/packSizes'
+import FormError from './FormError'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -110,7 +111,7 @@ export default function PackSizesModal({ inventory, packSizes, onReload, onClose
           })}
         </div>
 
-        {error && <p className="text-xs text-destructive">{error}</p>}
+        <FormError>{error}</FormError>
 
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>done</Button>
