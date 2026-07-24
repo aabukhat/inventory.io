@@ -1,17 +1,12 @@
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { TYPE_BADGE_CLASSES } from '../lib/badgeStyles'
 
 const PREVIEW_ITEMS = [
   { name: 'Sierra Nevada Pale Ale', type: 'beer', qty: 12 },
   { name: "Angry Orchard Crisp", type: 'cider', qty: 6 },
   { name: 'High Noon Watermelon', type: 'seltzer', qty: 8 },
 ]
-
-const TYPE_BADGE_CLASSES = {
-  beer:    'bg-[rgba(200,245,90,0.12)] text-[#c8f55a]',
-  seltzer: 'bg-[rgba(90,180,245,0.12)] text-[#5ab4f5]',
-  cider:   'bg-[rgba(245,180,90,0.12)] text-[#f5b45a]',
-}
 
 export default function Landing({ onSelectMode, authenticated = false, onBack }) {
   return (

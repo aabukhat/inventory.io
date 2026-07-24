@@ -19,6 +19,10 @@ export default function App() {
   const { profile, refresh: refreshProfile, loading: profileLoading } = useProfile(user)
 
   useEffect(() => {
+    document.documentElement.dataset.theme = profile?.theme_preference === 'light' ? 'light' : 'dark'
+  }, [profile?.theme_preference])
+
+  useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
       setUser(session?.user ?? null)
       setReady(true)

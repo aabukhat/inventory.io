@@ -4,6 +4,7 @@ import { setDisplayName, setFavoriteColor } from '../lib/profiles'
 import { validateAvatarFile, uploadAvatar, removeAvatar } from '../lib/avatar'
 import { COLOR_PALETTE } from '../lib/colorPalette'
 import Avatar from './Avatar'
+import ThemeToggle from './ThemeToggle'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -131,6 +132,18 @@ export default function ProfileModal({ profile, onClose, onChanged }) {
                 style={{ backgroundColor: c.hex }}
               />
             ))}
+          </div>
+        </div>
+
+        <div>
+          <Label className="mb-1.5 font-mono text-[11px] tracking-wide text-muted-foreground uppercase">
+            theme
+          </Label>
+          <div className="flex items-center gap-2">
+            <ThemeToggle profile={profile} onChanged={onChanged} />
+            <span className="text-[13px] text-muted-foreground">
+              {profile.theme_preference === 'light' ? 'light mode' : 'dark mode'}
+            </span>
           </div>
         </div>
 

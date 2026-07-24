@@ -20,10 +20,26 @@
   --font-sans: 'DM Sans', system-ui, sans-serif;
   --font-mono: 'DM Mono', monospace;
 
+  /* drink-type badge colors — tuned per theme below rather than left as
+     hardcoded hex in the components, since the bright dark-mode text
+     colors read as illegibly light-on-light in light mode. */
+  --badge-beer-bg: rgba(200,245,90,0.12);
+  --badge-beer-fg: #c8f55a;
+  --badge-seltzer-bg: rgba(90,180,245,0.12);
+  --badge-seltzer-fg: #5ab4f5;
+  --badge-cider-bg: rgba(245,180,90,0.12);
+  --badge-cider-fg: #f5b45a;
+  --badge-liquor-bg: rgba(180,90,245,0.12);
+  --badge-liquor-fg: #b45af5;
+  --badge-other-bg: rgba(180,180,180,0.1);
+  --badge-other-fg: #aaa;
+
   /* shadcn/ui semantic tokens, aliased to the palette above so shadcn
-     components match this app's existing dark theme instead of shadcn's
-     own default palette. This app has one fixed dark theme (no toggle),
-     so these live directly in :root rather than behind a `.dark` class. */
+     components match this app's palette instead of shadcn's own default
+     one. :root holds the dark theme (this app's original/default look);
+     [data-theme="light"] below overrides both blocks for light mode. The
+     active theme is applied as a data-theme attribute on <html> in App.jsx,
+     driven by the signed-in user's server-stored preference. */
   --background: var(--bg);
   --foreground: var(--text);
   --card: var(--surface);
@@ -41,6 +57,34 @@
   --destructive-foreground: var(--text);
   --input: var(--border-strong);
   --ring: var(--accent);
+}
+
+:root[data-theme="light"] {
+  --bg: #f7f6f3;
+  --surface: #ffffff;
+  --surface-2: #edebe6;
+  --border: rgba(0,0,0,0.08);
+  --border-strong: rgba(0,0,0,0.14);
+  --text: #1a1a1a;
+  --text-muted: #666666;
+  --text-dim: #999999;
+  --accent: #9333ea;
+  --accent-dark: #7629bb;
+  --danger: #d63d3d;
+
+  --badge-beer-bg: rgba(132,204,22,0.15);
+  --badge-beer-fg: #4d7c0f;
+  --badge-seltzer-bg: rgba(14,165,233,0.12);
+  --badge-seltzer-fg: #0369a1;
+  --badge-cider-bg: rgba(245,158,11,0.14);
+  --badge-cider-fg: #b45309;
+  --badge-liquor-bg: rgba(147,51,234,0.12);
+  --badge-liquor-fg: #7e22ce;
+  --badge-other-bg: rgba(113,113,122,0.10);
+  --badge-other-fg: #52525b;
+
+  --primary-foreground: #fdfcfb;
+  --accent-foreground: #fdfcfb;
 }
 
 @theme inline {

@@ -6,6 +6,7 @@ import MembersModal from './MembersModal'
 import PackSizesModal from './PackSizesModal'
 import ProfileModal from './ProfileModal'
 import Avatar from './Avatar'
+import ThemeToggle from './ThemeToggle'
 import Subsections from './Subsections'
 import { useSubsections } from '../hooks/useSubsections'
 import { usePackSizes } from '../hooks/usePackSizes'
@@ -13,6 +14,7 @@ import { useFrequentDrinks } from '../hooks/useFrequentDrinks'
 import { moveDrinks, ITEM_DRAG_MIME } from '../lib/subsections'
 import { recordDrinkAdd } from '../lib/drinkFrequency'
 import { groupItems, dominantType, sumQuantity, latestChange, parseLastChange } from '../lib/variantGrouping'
+import { TYPE_BADGE_CLASSES } from '../lib/badgeStyles'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -28,14 +30,6 @@ import {
   canAddItems, canIncreaseQty, canDecreaseQty, canEditDetails, canDeleteItems, canManageMembers,
   canManagePackSizes,
 } from '../lib/permissions'
-
-const TYPE_BADGE_CLASSES = {
-  beer:    'bg-[rgba(200,245,90,0.12)] text-[#c8f55a]',
-  seltzer: 'bg-[rgba(90,180,245,0.12)] text-[#5ab4f5]',
-  cider:   'bg-[rgba(245,180,90,0.12)] text-[#f5b45a]',
-  liquor:  'bg-[rgba(180,90,245,0.12)] text-[#b45af5]',
-  other:   'bg-[rgba(180,180,180,0.1)] text-[#aaa]',
-}
 
 export default function Inventory({ user, profile, inventory, onSignOut, onInventoryChanged, onShowLanding, onProfileChanged }) {
   const [items, setItems] = useState([])
@@ -458,6 +452,7 @@ export default function Inventory({ user, profile, inventory, onSignOut, onInven
             <Avatar profile={profile} size={20} />
             <span className="underline decoration-dotted underline-offset-2">{displayName()}</span>
           </button>
+          <ThemeToggle profile={profile} onChanged={onProfileChanged} />
           <Button variant="outline" size="sm" className="h-auto px-2 py-0.5 text-[11px]" onClick={onSignOut}>
             sign out
           </Button>
