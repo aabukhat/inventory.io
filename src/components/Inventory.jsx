@@ -11,6 +11,7 @@ import Subsections from './Subsections'
 import { useSubsections } from '../hooks/useSubsections'
 import { usePackSizes } from '../hooks/usePackSizes'
 import { useFrequentDrinks } from '../hooks/useFrequentDrinks'
+import { useRealtimeTable } from '../hooks/useRealtimeTable'
 import { moveDrinks, ITEM_DRAG_MIME } from '../lib/subsections'
 import { recordDrinkAdd } from '../lib/drinkFrequency'
 import { groupItems, dominantType, sumQuantity, latestChange, parseLastChange } from '../lib/variantGrouping'
@@ -81,43 +82,26 @@ export default function Inventory({ user, profile, inventory, onSignOut, onInven
 
   useEffect(() => { load() }, [load])
 
-  // realtime sync
-  useEffect(() => {
-    let channel
-
-    async function subscribe() {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (session?.access_token) supabase.realtime.setAuth(session.access_token)
-
-      channel = supabase
-        .channel(`drinks-changes-${inventory.id}`)
-        .on('postgres_changes', {
-          event: '*', schema: 'public', table: 'drinks',
-          filter: `inventory_id=eq.${inventory.id}`,
-        }, (payload) => {
-          if (payload.eventType === 'INSERT') {
-            const row = payload.new
-            setItems(prev => [...prev, row].sort((a, b) => (a.drink_name || '').localeCompare(b.drink_name || '')))
-            setFadingIn(prev => new Set(prev).add(row.id))
-            setTimeout(() => setFadingIn(prev => { const n = new Set(prev); n.delete(row.id); return n }), 500)
-          } else if (payload.eventType === 'UPDATE') {
-            const row = payload.new
-            setItems(prev => prev.map(item => item.id === row.id ? row : item))
-          } else if (payload.eventType === 'DELETE') {
-            const row = payload.old
-            setItems(prev => prev.filter(item => item.id !== row.id))
-          }
-        })
-        .subscribe((status, err) => {
-          if (status === 'CHANNEL_ERROR') console.error('[realtime] channel error', err)
-          if (status === 'TIMED_OUT') console.warn('[realtime] timed out')
-          if (status === 'CLOSED') console.warn('[realtime] closed')
-        })
+  const handleDrinkEvent = useCallback((payload) => {
+    if (payload.eventType === 'INSERT') {
+      const row = payload.new
+      setItems(prev => [...prev, row].sort((a, b) => (a.drink_name || '').localeCompare(b.drink_name || '')))
+      setFadingIn(prev => new Set(prev).add(row.id))
+      setTimeout(() => setFadingIn(prev => { const n = new Set(prev); n.delete(row.id); return n }), 500)
+    } else if (payload.eventType === 'UPDATE') {
+      const row = payload.new
+      setItems(prev => prev.map(item => item.id === row.id ? row : item))
+    } else if (payload.eventType === 'DELETE') {
+      const row = payload.old
+      setItems(prev => prev.filter(item => item.id !== row.id))
     }
+  }, [])
 
-    subscribe()
-    return () => { if (channel) supabase.removeChannel(channel) }
-  }, [inventory.id])
+  useRealtimeTable({
+    channelName: `drinks-changes-${inventory.id}`,
+    table: 'drinks',
+    filter: `inventory_id=eq.${inventory.id}`,
+  }, handleDrinkEvent)
 
   function displayName() {
     return profile?.display_name || user.email?.split('@')[0] || 'user'

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { listMembers, updateMemberRole, removeMember, renameInventory, deleteInventory } from '../lib/inventories'
-import { supabase } from '../lib/supabase'
+import { useRealtimeTable } from '../hooks/useRealtimeTable'
 import InviteMemberModal from './InviteMemberModal'
 import Avatar from './Avatar'
 import { Button } from '@/components/ui/button'
@@ -33,26 +33,11 @@ export default function MembersModal({ inventory, onClose, onChanged }) {
 
   // Other members' display names can change while this modal is open (e.g.
   // someone finishes onboarding elsewhere) — keep the list live.
-  useEffect(() => {
-    let channel
-
-    async function subscribe() {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (session?.access_token) supabase.realtime.setAuth(session.access_token)
-
-      channel = supabase
-        .channel(`members-profiles-changes-${inventory.id}`)
-        .on('postgres_changes', {
-          event: 'UPDATE', schema: 'public', table: 'profiles',
-        }, () => { load() })
-        .subscribe((status, err) => {
-          if (status === 'CHANNEL_ERROR') console.error('[realtime] channel error', err)
-        })
-    }
-
-    subscribe()
-    return () => { if (channel) supabase.removeChannel(channel) }
-  }, [inventory.id, load])
+  useRealtimeTable({
+    channelName: `members-profiles-changes-${inventory.id}`,
+    table: 'profiles',
+    event: 'UPDATE',
+  }, load)
 
   async function handleRoleChange(userId, role) {
     await updateMemberRole(inventory.id, userId, role)

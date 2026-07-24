@@ -1,5 +1,4 @@
 -- Multi-inventory sharing: personal + shared inventories with tiered permissions.
--- See /Users/aabukhat/.claude/plans/cozy-dancing-sundae.md for full design rationale.
 
 -- =========================================================================
 -- 1. Tables
