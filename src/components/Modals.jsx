@@ -39,7 +39,7 @@ function PillButton({ active, children, ...props }) {
   )
 }
 
-export function ItemModal({ item, onSave, onClose, packSizes = {} }) {
+export function ItemModal({ item, onSave, onClose, packSizes = {}, frequentDrinks = [] }) {
   const [brand, setBrand] = useState(item?.brand || '')
   const [drinkName, setDrinkName] = useState(item?.drink_name || '')
   const [flavor, setFlavor] = useState(item?.flavor || '')
@@ -97,6 +97,15 @@ export function ItemModal({ item, onSave, onClose, packSizes = {} }) {
     setShowSuggestions(false)
   }
 
+  function selectFrequent(row) {
+    setBrand(row.brand)
+    setDrinkName(row.drink_name)
+    setFlavor(row.flavor || '')
+    setType(row.type)
+    setUnit(row.unit)
+    setUnitSize(row.unit_size)
+  }
+
   function handleNameKeyDown(e) {
     if (!showSuggestions) {
       if (e.key === 'Enter') submit()
@@ -142,6 +151,19 @@ export function ItemModal({ item, onSave, onClose, packSizes = {} }) {
         <DialogHeader>
           <DialogTitle>{item ? 'edit item' : 'add item'}</DialogTitle>
         </DialogHeader>
+
+        {!item && frequentDrinks.length > 0 && (
+          <div>
+            <FieldLabel>your usual</FieldLabel>
+            <div className="flex flex-wrap gap-1.5">
+              {frequentDrinks.map((row, i) => (
+                <PillButton key={i} onClick={() => selectFrequent(row)}>
+                  {[row.brand, row.drink_name, row.flavor].filter(Boolean).join(' ')}
+                </PillButton>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div>
           <FieldLabel>brand</FieldLabel>

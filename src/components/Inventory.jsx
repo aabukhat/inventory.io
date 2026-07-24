@@ -7,7 +7,9 @@ import PackSizesModal from './PackSizesModal'
 import Subsections from './Subsections'
 import { useSubsections } from '../hooks/useSubsections'
 import { usePackSizes } from '../hooks/usePackSizes'
+import { useFrequentDrinks } from '../hooks/useFrequentDrinks'
 import { moveDrinks, ITEM_DRAG_MIME } from '../lib/subsections'
+import { recordDrinkAdd } from '../lib/drinkFrequency'
 import { groupItems, dominantType, sumQuantity, latestChange, parseLastChange } from '../lib/variantGrouping'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -51,6 +53,7 @@ export default function Inventory({ user, inventory, onSignOut, onInventoryChang
   const role = inventory.role
   const { sections, reload: reloadSections } = useSubsections(inventory.id)
   const { packSizes, reload: reloadPackSizes } = usePackSizes(inventory.id)
+  const { frequentDrinks, reload: reloadFrequentDrinks } = useFrequentDrinks(inventory.id)
   const uncategorized = sections.find(sec => sec.is_uncategorized)
   const hasRealSections = sections.some(sec => !sec.is_uncategorized)
 
@@ -124,12 +127,16 @@ export default function Inventory({ user, inventory, onSignOut, onInventoryChang
   }
 
   async function addItem(fields) {
-    await supabase.from('drinks').insert({
+    const { error } = await supabase.from('drinks').insert({
       ...fields,
       inventory_id: inventory.id,
       subsection_id: uncategorized?.id,
       last_change: `${displayName()} added · ${now()}`,
     })
+    if (!error) {
+      await recordDrinkAdd(inventory.id, fields)
+      reloadFrequentDrinks()
+    }
     setModal(null)
   }
 
@@ -540,7 +547,7 @@ export default function Inventory({ user, inventory, onSignOut, onInventoryChang
       )}
 
       {modal === 'add' && (
-        <ItemModal onSave={addItem} onClose={() => setModal(null)} packSizes={packSizes} />
+        <ItemModal onSave={addItem} onClose={() => setModal(null)} packSizes={packSizes} frequentDrinks={frequentDrinks} />
       )}
       {modal === 'bulk' && (
         <BulkModal onSave={bulkAdd} onClose={() => setModal(null)} />
