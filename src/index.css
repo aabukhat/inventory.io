@@ -1,4 +1,8 @@
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
 
 :root {
   --bg: #0e0e0e;
@@ -9,12 +13,114 @@
   --text: #f0ede8;
   --text-muted: #888;
   --text-dim: #555;
-  --accent: #c8f55a;
-  --accent-dark: #9ec43a;
+  --accent: #b45af5;
+  --accent-dark: #9048c4;
   --danger: #ff5f5f;
   --radius: 8px;
   --font-sans: 'DM Sans', system-ui, sans-serif;
   --font-mono: 'DM Mono', monospace;
+
+  /* drink-type badge colors — tuned per theme below rather than left as
+     hardcoded hex in the components, since the bright dark-mode text
+     colors read as illegibly light-on-light in light mode. */
+  --badge-beer-bg: rgba(200,245,90,0.12);
+  --badge-beer-fg: #c8f55a;
+  --badge-seltzer-bg: rgba(90,180,245,0.12);
+  --badge-seltzer-fg: #5ab4f5;
+  --badge-cider-bg: rgba(245,180,90,0.12);
+  --badge-cider-fg: #f5b45a;
+  --badge-liquor-bg: rgba(180,90,245,0.12);
+  --badge-liquor-fg: #b45af5;
+  --badge-other-bg: rgba(180,180,180,0.1);
+  --badge-other-fg: #aaa;
+
+  /* shadcn/ui semantic tokens, aliased to the palette above so shadcn
+     components match this app's palette instead of shadcn's own default
+     one. :root holds the dark theme (this app's original/default look);
+     [data-theme="light"] below overrides both blocks for light mode. The
+     active theme is applied as a data-theme attribute on <html> in App.jsx,
+     driven by the signed-in user's server-stored preference. */
+  --background: var(--bg);
+  --foreground: var(--text);
+  --card: var(--surface);
+  --card-foreground: var(--text);
+  --popover: var(--surface);
+  --popover-foreground: var(--text);
+  --primary: var(--accent);
+  --primary-foreground: #0e0e0e;
+  --secondary: var(--surface-2);
+  --secondary-foreground: var(--text);
+  --muted: var(--surface-2);
+  --muted-foreground: var(--text-muted);
+  --accent-foreground: #0e0e0e;
+  --destructive: var(--danger);
+  --destructive-foreground: var(--text);
+  --input: var(--border-strong);
+  --ring: var(--accent);
+}
+
+:root[data-theme="light"] {
+  --bg: #f7f6f3;
+  --surface: #ffffff;
+  --surface-2: #edebe6;
+  --border: rgba(0,0,0,0.08);
+  --border-strong: rgba(0,0,0,0.14);
+  --text: #1a1a1a;
+  --text-muted: #666666;
+  --text-dim: #999999;
+  --accent: #9333ea;
+  --accent-dark: #7629bb;
+  --danger: #d63d3d;
+
+  --badge-beer-bg: rgba(132,204,22,0.15);
+  --badge-beer-fg: #4d7c0f;
+  --badge-seltzer-bg: rgba(14,165,233,0.12);
+  --badge-seltzer-fg: #0369a1;
+  --badge-cider-bg: rgba(245,158,11,0.14);
+  --badge-cider-fg: #b45309;
+  --badge-liquor-bg: rgba(147,51,234,0.12);
+  --badge-liquor-fg: #7e22ce;
+  --badge-other-bg: rgba(113,113,122,0.10);
+  --badge-other-fg: #52525b;
+
+  --primary-foreground: #fdfcfb;
+  --accent-foreground: #fdfcfb;
+}
+
+@theme inline {
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
 }
 
 body {

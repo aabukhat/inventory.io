@@ -1,200 +1,144 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, Fragment } from 'react'
+import { ChevronRightIcon, ChevronDownIcon } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { ItemModal, BulkModal } from './Modals'
+import MembersModal from './MembersModal'
+import PackSizesModal from './PackSizesModal'
+import ProfileModal from './ProfileModal'
+import Avatar from './Avatar'
+import ThemeToggle from './ThemeToggle'
+import Subsections from './Subsections'
+import { useSubsections } from '../hooks/useSubsections'
+import { usePackSizes } from '../hooks/usePackSizes'
+import { useFrequentDrinks } from '../hooks/useFrequentDrinks'
+import { useRealtimeTable } from '../hooks/useRealtimeTable'
+import { moveDrinks, ITEM_DRAG_MIME } from '../lib/subsections'
+import { recordDrinkAdd } from '../lib/drinkFrequency'
+import { groupItems, dominantType, sumQuantity, latestChange, parseLastChange } from '../lib/variantGrouping'
+import { TYPE_BADGE_CLASSES } from '../lib/badgeStyles'
+import { cn } from '@/lib/utils'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Badge } from '@/components/ui/badge'
+import { Card } from '@/components/ui/card'
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/components/ui/select'
+import {
+  Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
+} from '@/components/ui/table'
+import {
+  canAddItems, canIncreaseQty, canDecreaseQty, canEditDetails, canDeleteItems, canManageMembers,
+  canManagePackSizes,
+} from '../lib/permissions'
 
-const TYPE_COLORS = {
-  beer:    { bg: 'rgba(200,245,90,0.12)',  color: '#c8f55a' },
-  seltzer: { bg: 'rgba(90,180,245,0.12)', color: '#5ab4f5' },
-  cider:   { bg: 'rgba(245,180,90,0.12)', color: '#f5b45a' },
-  liquor:  { bg: 'rgba(180,90,245,0.12)', color: '#b45af5' },
-  other:   { bg: 'rgba(180,180,180,0.1)', color: '#aaa' },
-}
-
-const s = {
-  wrap: { maxWidth: '820px', margin: '0 auto', padding: '1.5rem 1rem 3rem' },
-  topbar: {
-    display: 'flex', alignItems: 'center',
-    justifyContent: 'space-between', marginBottom: '1.5rem', gap: '12px', flexWrap: 'wrap',
-  },
-  logo: {
-    fontFamily: 'var(--font-mono)', fontSize: '12px',
-    color: 'var(--accent)', letterSpacing: '0.08em', textTransform: 'uppercase',
-  },
-  userPill: {
-    display: 'flex', alignItems: 'center', gap: '8px',
-    fontSize: '12px', color: 'var(--text-muted)',
-  },
-  signOutBtn: {
-    background: 'none', border: '1px solid var(--border)',
-    borderRadius: '4px', padding: '3px 8px', fontSize: '11px',
-    color: 'var(--text-dim)', cursor: 'pointer',
-  },
-  heading: { fontSize: '22px', fontWeight: 600, marginBottom: '0.25rem' },
-  sub: { color: 'var(--text-muted)', fontSize: '13px', marginBottom: '1.5rem' },
-  stats: {
-    display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
-    gap: '10px', marginBottom: '1.5rem',
-  },
-  stat: {
-    background: 'var(--surface)', border: '1px solid var(--border)',
-    borderRadius: '10px', padding: '12px 14px',
-  },
-  statLabel: { fontSize: '11px', color: 'var(--text-muted)', marginBottom: '4px', fontFamily: 'var(--font-mono)' },
-  statVal: { fontSize: '22px', fontWeight: 600 },
-  controls: {
-    display: 'flex', gap: '8px', flexWrap: 'wrap',
-    alignItems: 'center', marginBottom: '1rem',
-  },
-  searchInput: {
-    flex: 1, minWidth: '160px',
-    background: 'var(--surface)', border: '1px solid var(--border-strong)',
-    borderRadius: 'var(--radius)', padding: '8px 12px', fontSize: '13px', outline: 'none',
-    color: 'var(--text)',
-  },
-  filterSelect: {
-    background: 'var(--surface)', border: '1px solid var(--border-strong)',
-    borderRadius: 'var(--radius)', padding: '8px 12px', fontSize: '13px', outline: 'none',
-    color: 'var(--text)',
-  },
-  btn: {
-    background: 'var(--surface)', border: '1px solid var(--border-strong)',
-    borderRadius: 'var(--radius)', padding: '8px 14px',
-    fontSize: '13px', color: 'var(--text)',
-    display: 'flex', alignItems: 'center', gap: '6px',
-    transition: 'border-color 0.1s',
-  },
-  primaryBtn: {
-    background: 'var(--accent)', border: 'none',
-    borderRadius: 'var(--radius)', padding: '8px 14px',
-    fontSize: '13px', fontWeight: 600, color: '#0e0e0e',
-    display: 'flex', alignItems: 'center', gap: '6px',
-  },
-  tableWrap: {
-    border: '1px solid var(--border)', borderRadius: '12px', overflow: 'hidden',
-  },
-  table: { width: '100%', borderCollapse: 'collapse' },
-  th: {
-    padding: '10px 14px', textAlign: 'left',
-    fontSize: '11px', fontFamily: 'var(--font-mono)', letterSpacing: '0.05em',
-    textTransform: 'uppercase', color: 'var(--text-dim)',
-    borderBottom: '1px solid var(--border)', background: 'var(--surface)',
-  },
-  td: { padding: '11px 14px', borderBottom: '1px solid var(--border)' },
-  badge: (type) => ({
-    display: 'inline-block', padding: '2px 8px', borderRadius: '4px',
-    fontSize: '11px', fontWeight: 500,
-    background: TYPE_COLORS[type]?.bg || TYPE_COLORS.other.bg,
-    color: TYPE_COLORS[type]?.color || TYPE_COLORS.other.color,
-  }),
-  qtyCtrl: { display: 'flex', alignItems: 'center', gap: '8px' },
-  qtyBtn: {
-    width: '26px', height: '26px', borderRadius: '50%',
-    border: '1px solid var(--border-strong)', background: 'var(--surface-2)',
-    color: 'var(--text)', fontSize: '16px', display: 'flex',
-    alignItems: 'center', justifyContent: 'center', transition: 'border-color 0.1s',
-  },
-  qtyNum: { fontWeight: 600, minWidth: '22px', textAlign: 'center', fontFamily: 'var(--font-mono)' },
-  logEntry: { fontSize: '11px', color: 'var(--text-dim)', fontFamily: 'var(--font-mono)' },
-  actionBtn: {
-    background: 'none', border: '1px solid var(--border)',
-    borderRadius: '6px', padding: '4px 8px', fontSize: '12px',
-    color: 'var(--text-muted)', marginRight: '4px', transition: 'all 0.1s',
-  },
-  dangerBtn: {
-    background: 'none', border: '1px solid var(--border)',
-    borderRadius: '6px', padding: '4px 8px', fontSize: '12px',
-    color: 'var(--danger)', transition: 'all 0.1s',
-  },
-  empty: {
-    textAlign: 'center', padding: '3rem 1rem',
-    color: 'var(--text-dim)', fontFamily: 'var(--font-mono)', fontSize: '12px',
-  },
-  spinner: {
-    textAlign: 'center', padding: '2rem',
-    color: 'var(--text-muted)', fontSize: '12px', fontFamily: 'var(--font-mono)',
-  },
-}
-
-export default function Inventory({ user, onSignOut }) {
+export default function Inventory({ user, profile, inventory, onSignOut, onInventoryChanged, onShowLanding, onProfileChanged }) {
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [filterType, setFilterType] = useState('')
   const [modal, setModal] = useState(null) // null | 'add' | 'bulk' | {edit: item}
+  const [managingMembers, setManagingMembers] = useState(false)
+  const [managingPackSizes, setManagingPackSizes] = useState(false)
+  const [managingProfile, setManagingProfile] = useState(false)
   const [fadingOut, setFadingOut] = useState(new Set())
   const [fadingIn, setFadingIn] = useState(new Set())
-  const [sortCol, setSortCol] = useState('name')
+  const [expandedGroups, setExpandedGroups] = useState(new Set())
+  const [sortCol, setSortCol] = useState('drink_name')
   const [sortDir, setSortDir] = useState('asc')
+  const [moveError, setMoveError] = useState('')
+
+  const role = inventory.role
+  const { sections, reload: reloadSections } = useSubsections(inventory.id)
+  const { packSizes, reload: reloadPackSizes } = usePackSizes(inventory.id)
+  const { frequentDrinks, reload: reloadFrequentDrinks } = useFrequentDrinks(inventory.id)
+  const uncategorized = sections.find(sec => sec.is_uncategorized)
+  const hasRealSections = sections.some(sec => !sec.is_uncategorized)
 
   function handleSort(col) {
     if (sortCol === col) setSortDir(d => d === 'asc' ? 'desc' : 'asc')
     else { setSortCol(col); setSortDir('asc') }
   }
 
+  function toggleGroup(key) {
+    setExpandedGroups(prev => {
+      const next = new Set(prev)
+      if (next.has(key)) next.delete(key)
+      else next.add(key)
+      return next
+    })
+  }
+
   const load = useCallback(async () => {
+    setLoading(true)
     const { data, error } = await supabase
       .from('drinks')
       .select('*')
-      .order('name')
+      .eq('inventory_id', inventory.id)
+      .order('drink_name')
     if (!error) setItems(data || [])
     setLoading(false)
-  }, [])
+  }, [inventory.id])
 
   useEffect(() => { load() }, [load])
 
-  // realtime sync
-  useEffect(() => {
-    let channel
-
-    async function subscribe() {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (session?.access_token) supabase.realtime.setAuth(session.access_token)
-
-      channel = supabase
-        .channel('drinks-changes')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'drinks' }, (payload) => {
-          if (payload.eventType === 'INSERT') {
-            const row = payload.new
-            setItems(prev => [...prev, row].sort((a, b) => a.name.localeCompare(b.name)))
-            setFadingIn(prev => new Set(prev).add(row.id))
-            setTimeout(() => setFadingIn(prev => { const n = new Set(prev); n.delete(row.id); return n }), 500)
-          } else if (payload.eventType === 'UPDATE') {
-            const row = payload.new
-            setItems(prev => prev.map(item => item.id === row.id ? row : item))
-          } else if (payload.eventType === 'DELETE') {
-            const row = payload.old
-            setItems(prev => prev.filter(item => item.id !== row.id))
-          }
-        })
-        .subscribe((status, err) => {
-          if (status === 'CHANNEL_ERROR') console.error('[realtime] channel error', err)
-          if (status === 'TIMED_OUT') console.warn('[realtime] timed out')
-          if (status === 'CLOSED') console.warn('[realtime] closed')
-        })
+  const handleDrinkEvent = useCallback((payload) => {
+    if (payload.eventType === 'INSERT') {
+      const row = payload.new
+      setItems(prev => [...prev, row].sort((a, b) => (a.drink_name || '').localeCompare(b.drink_name || '')))
+      setFadingIn(prev => new Set(prev).add(row.id))
+      setTimeout(() => setFadingIn(prev => { const n = new Set(prev); n.delete(row.id); return n }), 500)
+    } else if (payload.eventType === 'UPDATE') {
+      const row = payload.new
+      setItems(prev => prev.map(item => item.id === row.id ? row : item))
+    } else if (payload.eventType === 'DELETE') {
+      const row = payload.old
+      setItems(prev => prev.filter(item => item.id !== row.id))
     }
-
-    subscribe()
-    return () => { if (channel) supabase.removeChannel(channel) }
   }, [])
 
+  useRealtimeTable({
+    channelName: `drinks-changes-${inventory.id}`,
+    table: 'drinks',
+    filter: `inventory_id=eq.${inventory.id}`,
+  }, handleDrinkEvent)
+
   function displayName() {
-    return user.email?.split('@')[0] ?? 'user'
+    return profile?.display_name || user.email?.split('@')[0] || 'user'
   }
 
   async function addItem(fields) {
-    await supabase.from('drinks').insert({
+    const { error } = await supabase.from('drinks').insert({
       ...fields,
+      inventory_id: inventory.id,
+      subsection_id: uncategorized?.id,
       last_change: `${displayName()} added · ${now()}`,
     })
+    if (!error) {
+      await recordDrinkAdd(inventory.id, fields)
+      reloadFrequentDrinks()
+    }
     setModal(null)
   }
 
   async function bulkAdd(rows) {
     const ts = now()
     await supabase.from('drinks').insert(
-      rows.map(r => ({ ...r, last_change: `${displayName()} added · ${ts}` }))
+      rows.map(r => ({
+        ...r, inventory_id: inventory.id, subsection_id: uncategorized?.id,
+        last_change: `${displayName()} added · ${ts}`,
+      }))
     )
     setModal(null)
+  }
+
+  async function moveItem(drinkIds, subsectionId) {
+    setMoveError('')
+    try {
+      await moveDrinks(Array.isArray(drinkIds) ? drinkIds : [drinkIds], subsectionId)
+    } catch (err) {
+      setMoveError(err.message)
+    }
   }
 
   async function updateItem(id, fields) {
@@ -202,10 +146,14 @@ export default function Inventory({ user, onSignOut }) {
     setModal(null)
   }
 
-  async function adjustQty(item, delta) {
+  async function adjustQty(item, delta, { isVariant = false } = {}) {
     const newQty = Math.max(0, item.quantity + delta)
     if (newQty === item.quantity) return
-    if (newQty === 0) {
+    // A variant that's currently part of an expanded group persists at zero
+    // as a re-stock placeholder instead of being deleted — its siblings keep
+    // the group alive, so there's no "empty row" ambiguity the way there
+    // would be for a lone item hitting zero.
+    if (newQty === 0 && !isVariant) {
       setFadingOut(prev => new Set(prev).add(item.id))
       setTimeout(async () => {
         setItems(prev => prev.filter(i => i.id !== item.id))
@@ -229,8 +177,8 @@ export default function Inventory({ user, onSignOut }) {
   }
 
   function exportCSV() {
-    const rows = [['name', 'type', 'quantity', 'last change'],
-      ...items.map(i => [i.name, i.type, i.quantity, i.last_change || ''])]
+    const rows = [['brand', 'drink_name', 'flavor', 'type', 'quantity', 'last change'],
+      ...items.map(i => [i.brand || '', i.drink_name, i.flavor || '', i.type, i.quantity, i.last_change || ''])]
     const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n')
     const a = document.createElement('a')
     a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv)
@@ -240,15 +188,12 @@ export default function Inventory({ user, onSignOut }) {
 
   const filtered = items.filter(i => {
     const q = search.toLowerCase()
-    return (!q || i.name.toLowerCase().includes(q)) && (!filterType || i.type === filterType)
+    const haystack = [i.brand, i.drink_name, i.flavor].filter(Boolean).join(' ').toLowerCase()
+    return (!q || haystack.includes(q)) && (!filterType || i.type === filterType)
   })
 
-  function parseLastChange(str) {
-    if (!str) return 0
-    const after = str.split('·').pop()?.trim()
-    if (!after) return 0
-    const year = new Date().getFullYear()
-    return new Date(after.replace(',', `, ${year}`)).getTime() || 0
+  function brandDrinkName(item) {
+    return [item.brand, item.drink_name].filter(Boolean).join(' ').toLowerCase()
   }
 
   const displayed = [...filtered].sort((a, b) => {
@@ -257,6 +202,8 @@ export default function Inventory({ user, onSignOut }) {
       cmp = (a.quantity ?? 0) - (b.quantity ?? 0)
     } else if (sortCol === 'last_change') {
       cmp = parseLastChange(a.last_change) - parseLastChange(b.last_change)
+    } else if (sortCol === 'drink_name') {
+      cmp = brandDrinkName(a).localeCompare(brandDrinkName(b))
     } else {
       cmp = (a[sortCol] ?? '').toString().toLowerCase().localeCompare((b[sortCol] ?? '').toString().toLowerCase())
     }
@@ -268,106 +215,335 @@ export default function Inventory({ user, onSignOut }) {
   const seltzQty  = items.filter(i => i.type === 'seltzer').reduce((a, i) => a + (i.quantity || 0), 0)
   const liquorQty = items.filter(i => i.type === 'liquor').reduce((a, i) => a + (i.quantity || 0), 0)
 
+  const canMoveItems = canAddItems(role)
+
+  const itemCounts = {}
+  for (const item of items) {
+    itemCounts[item.subsection_id] = (itemCounts[item.subsection_id] || 0) + 1
+  }
+
+  function sortHeader(col, label, widthClass) {
+    return (
+      <TableHead
+        className={cn('cursor-pointer border-b border-border bg-card select-none', widthClass)}
+        onClick={() => handleSort(col)}
+      >
+        {label}{' '}
+        <span className={cn('font-sans tracking-normal', sortCol === col ? 'opacity-100' : 'opacity-25')}>
+          {sortCol === col ? (sortDir === 'asc' ? '↑' : '↓') : '↕'}
+        </span>
+      </TableHead>
+    )
+  }
+
+  function itemLabel(item) {
+    return [item.brand, item.drink_name, item.flavor].filter(Boolean).join(' ')
+  }
+
+  function renderItemRow(item, { nested = false } = {}) {
+    return (
+      <TableRow
+        key={item.id}
+        className={cn(
+          fadingOut.has(item.id) ? 'row-pop-out' : fadingIn.has(item.id) ? 'row-pop-in' : undefined,
+          nested && item.quantity === 0 && 'opacity-50'
+        )}
+        draggable={canMoveItems && hasRealSections}
+        onDragStart={e => {
+          e.dataTransfer.setData(ITEM_DRAG_MIME, JSON.stringify([item.id]))
+          e.dataTransfer.effectAllowed = 'move'
+        }}
+      >
+        <TableCell className={cn('font-medium whitespace-normal', nested && 'pl-8 font-normal text-muted-foreground')}>
+          {nested ? (item.flavor || '(no flavor)') : itemLabel(item)}
+        </TableCell>
+        <TableCell>
+          <Badge className={cn('rounded-md font-medium', TYPE_BADGE_CLASSES[item.type] || TYPE_BADGE_CLASSES.other)}>
+            {item.type}
+          </Badge>
+        </TableCell>
+        <TableCell>
+          <div className="flex items-center gap-2">
+            {canDecreaseQty(role) && (
+              <button
+                className="flex h-6.5 w-6.5 items-center justify-center rounded-full border border-input bg-secondary text-base transition-colors hover:border-[var(--border-strong)]"
+                onClick={() => adjustQty(item, -1, { isVariant: nested })}
+                aria-label="decrease"
+              >
+                −
+              </button>
+            )}
+            <div className="min-w-8 text-center">
+              <div className="font-mono font-semibold">{item.quantity}</div>
+              {item.unit && item.unit_size && (
+                <div className="mt-0.5 font-mono text-[10px] whitespace-nowrap text-muted-foreground">
+                  {item.unit_size} {item.unit}
+                </div>
+              )}
+            </div>
+            {canIncreaseQty(role) && (
+              <button
+                className="flex h-6.5 w-6.5 items-center justify-center rounded-full border border-input bg-secondary text-base transition-colors hover:border-[var(--border-strong)]"
+                onClick={() => adjustQty(item, 1, { isVariant: nested })}
+                aria-label="increase"
+              >
+                +
+              </button>
+            )}
+          </div>
+        </TableCell>
+        <TableCell>
+          <span className="font-mono text-[11px] text-muted-foreground">{item.last_change || '—'}</span>
+        </TableCell>
+        {hasRealSections && (
+          <TableCell>
+            {canMoveItems && (
+              <Select value={item.subsection_id} onValueChange={(value) => moveItem([item.id], value)}>
+                <SelectTrigger size="sm" className="h-auto py-1 text-[11px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {sections.map(sec => (
+                    <SelectItem key={sec.id} value={sec.id}>{sec.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          </TableCell>
+        )}
+        <TableCell>
+          {canEditDetails(role) && (
+            <Button variant="outline" size="sm" className="mr-1" onClick={() => setModal({ edit: item })}>
+              edit
+            </Button>
+          )}
+          {canDeleteItems(role) && (
+            <Button variant="outline" size="sm" className="text-destructive" onClick={() => deleteItem(item.id)}>
+              del
+            </Button>
+          )}
+        </TableCell>
+      </TableRow>
+    )
+  }
+
+  function renderGroupRow(entry) {
+    const variants = entry.items
+    const expanded = expandedGroups.has(entry.key)
+    const groupIds = variants.map(v => v.id)
+
+    return (
+      <Fragment key={entry.key}>
+        <TableRow
+          draggable={canMoveItems && hasRealSections}
+          onDragStart={e => {
+            e.dataTransfer.setData(ITEM_DRAG_MIME, JSON.stringify(groupIds))
+            e.dataTransfer.effectAllowed = 'move'
+          }}
+        >
+          <TableCell className="font-medium whitespace-normal">
+            <button
+              className="inline-flex items-center gap-1.5 text-left"
+              onClick={() => toggleGroup(entry.key)}
+              aria-label={expanded ? 'collapse' : 'expand'}
+            >
+              {expanded ? <ChevronDownIcon className="size-3.5 text-muted-foreground" /> : <ChevronRightIcon className="size-3.5 text-muted-foreground" />}
+              {[variants[0].brand, variants[0].drink_name].filter(Boolean).join(' ')}
+              <span className="font-mono text-[10px] text-muted-foreground">({variants.length})</span>
+            </button>
+          </TableCell>
+          <TableCell>
+            <Badge className={cn('rounded-md font-medium', TYPE_BADGE_CLASSES[dominantType(variants)] || TYPE_BADGE_CLASSES.other)}>
+              {dominantType(variants)}
+            </Badge>
+          </TableCell>
+          <TableCell>
+            <div className="min-w-8 text-center font-mono font-semibold">{sumQuantity(variants)}</div>
+          </TableCell>
+          <TableCell>
+            <span className="font-mono text-[11px] text-muted-foreground">{latestChange(variants) || '—'}</span>
+          </TableCell>
+          {hasRealSections && (
+            <TableCell>
+              {canMoveItems && (
+                <Select value={variants[0].subsection_id} onValueChange={(value) => moveItem(groupIds, value)}>
+                  <SelectTrigger size="sm" className="h-auto py-1 text-[11px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {sections.map(sec => (
+                      <SelectItem key={sec.id} value={sec.id}>{sec.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </TableCell>
+          )}
+          <TableCell />
+        </TableRow>
+        {expanded && variants.map(variant => renderItemRow(variant, { nested: true }))}
+      </Fragment>
+    )
+  }
+
+  function renderTable(sectionItems, emptyMessage) {
+    return (
+      <Table>
+        <TableHeader>
+          <TableRow className="hover:bg-transparent">
+            {sortHeader('drink_name', 'name / brand')}
+            {sortHeader('type', 'type')}
+            {sortHeader('quantity', 'quantity', 'w-[130px]')}
+            {sortHeader('last_change', 'last change')}
+            {hasRealSections && (
+              <TableHead className="w-[110px] border-b border-border bg-card">move to</TableHead>
+            )}
+            <TableHead className="w-[80px] border-b border-border bg-card" />
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {sectionItems.length === 0 ? (
+            <TableRow>
+              <TableCell colSpan={hasRealSections ? 6 : 5} className="py-12 text-center font-mono text-xs text-muted-foreground">
+                {emptyMessage}
+              </TableCell>
+            </TableRow>
+          ) : groupItems(sectionItems).map(entry =>
+            entry.kind === 'single' ? renderItemRow(entry.item) : renderGroupRow(entry)
+          )}
+        </TableBody>
+      </Table>
+    )
+  }
+
   return (
-    <div style={s.wrap}>
-      <div style={s.topbar}>
-        <div style={s.logo}>🧺 inventory.io</div>
-        <div style={s.userPill}>
-          <span>{user.email}</span>
-          <button style={s.signOutBtn} onClick={onSignOut}>sign out</button>
+    <div className="mx-auto max-w-[940px] px-4 pt-6 pb-12">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+        <button
+          type="button"
+          onClick={onShowLanding}
+          className="cursor-pointer border-none bg-none p-0 font-mono text-xs tracking-wide text-primary uppercase"
+        >
+          🧺 inventory.io
+        </button>
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <button
+            type="button"
+            onClick={() => setManagingProfile(true)}
+            className="flex cursor-pointer items-center gap-1.5 border-none bg-none p-0 text-xs text-muted-foreground hover:text-foreground"
+            title={user.email}
+          >
+            <Avatar profile={profile} size={20} />
+            <span className="underline decoration-dotted underline-offset-2">{displayName()}</span>
+          </button>
+          <ThemeToggle profile={profile} onChanged={onProfileChanged} />
+          <Button variant="outline" size="sm" className="h-auto px-2 py-0.5 text-[11px]" onClick={onSignOut}>
+            sign out
+          </Button>
         </div>
       </div>
 
-      <h1 style={s.heading}>drink inventory</h1>
-      <p style={s.sub}>updates live</p>
+      <div className="mb-1 flex items-center gap-2.5">
+        <h1 className="text-[22px] font-semibold">{inventory.name}</h1>
+        {inventory.type === 'shared' && canManageMembers(role) && (
+          <Button variant="outline" size="sm" onClick={() => setManagingMembers(true)}>manage</Button>
+        )}
+        {canManagePackSizes(role) && (
+          <Button variant="outline" size="sm" onClick={() => setManagingPackSizes(true)}>pack sizes</Button>
+        )}
+      </div>
+      <p className="mb-6 text-[13px] text-muted-foreground">updates live</p>
 
-      <div style={s.stats}>
-        <div style={s.stat}><div style={s.statLabel}>items</div><div style={s.statVal}>{items.length}</div></div>
-        <div style={s.stat}><div style={s.statLabel}>total units</div><div style={s.statVal}>{totalQty}</div></div>
-        <div style={s.stat}><div style={s.statLabel}>beers</div><div style={s.statVal}>{beerQty}</div></div>
-        <div style={s.stat}><div style={s.statLabel}>seltzers</div><div style={s.statVal}>{seltzQty}</div></div>
-        <div style={s.stat}><div style={s.statLabel}>liquor</div><div style={s.statVal}>{liquorQty}</div></div>
+      <div className="mb-6 grid grid-cols-[repeat(auto-fit,minmax(130px,1fr))] gap-2.5">
+        <Card className="gap-1 rounded-[10px] px-3.5 py-3">
+          <div className="font-mono text-[11px] text-muted-foreground">items</div>
+          <div className="text-[22px] font-semibold">{items.length}</div>
+        </Card>
+        <Card className="gap-1 rounded-[10px] px-3.5 py-3">
+          <div className="font-mono text-[11px] text-muted-foreground">total units</div>
+          <div className="text-[22px] font-semibold">{totalQty}</div>
+        </Card>
+        <Card className="gap-1 rounded-[10px] px-3.5 py-3">
+          <div className="font-mono text-[11px] text-muted-foreground">beers</div>
+          <div className="text-[22px] font-semibold">{beerQty}</div>
+        </Card>
+        <Card className="gap-1 rounded-[10px] px-3.5 py-3">
+          <div className="font-mono text-[11px] text-muted-foreground">seltzers</div>
+          <div className="text-[22px] font-semibold">{seltzQty}</div>
+        </Card>
+        <Card className="gap-1 rounded-[10px] px-3.5 py-3">
+          <div className="font-mono text-[11px] text-muted-foreground">liquor</div>
+          <div className="text-[22px] font-semibold">{liquorQty}</div>
+        </Card>
       </div>
 
-      <div style={s.controls}>
-        <input
-          style={s.searchInput} value={search} placeholder="search…"
+      <Subsections
+        inventory={inventory}
+        role={role}
+        sections={sections}
+        itemCounts={itemCounts}
+        onReload={reloadSections}
+        onMoveItem={moveItem}
+      />
+
+      {moveError && <p className="mb-4 text-[13px] text-destructive">{moveError}</p>}
+
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        <Input
+          className="min-w-40 flex-1 bg-card text-[13px]"
+          value={search}
+          placeholder="search…"
           onChange={e => setSearch(e.target.value)}
         />
-        <select style={s.filterSelect} value={filterType} onChange={e => setFilterType(e.target.value)}>
-          <option value="">all types</option>
-          <option value="beer">beer</option>
-          <option value="seltzer">seltzer</option>
-          <option value="cider">cider</option>
-          <option value="liquor">liquor</option>
-          <option value="other">other</option>
-        </select>
-        <button style={s.btn} onClick={exportCSV}>↓ export</button>
-        <button style={s.btn} onClick={() => setModal('bulk')}>≡ bulk add</button>
-        <button style={s.primaryBtn} onClick={() => setModal('add')}>+ add item</button>
-      </div>
-
-      <div style={s.tableWrap}>
-        {loading ? (
-          <div style={s.spinner}>loading…</div>
-        ) : (
-          <table style={s.table}>
-            <thead>
-              <tr>
-                {[['name', 'name / brand'], ['type', 'type'], ['quantity', 'quantity'], ['last_change', 'last change']].map(([col, label]) => (
-                  <th
-                    key={col}
-                    style={{ ...s.th, cursor: 'pointer', userSelect: 'none', width: col === 'quantity' ? '130px' : undefined }}
-                    onClick={() => handleSort(col)}
-                  >
-                    {label}{' '}
-                    <span style={{ opacity: sortCol === col ? 1 : 0.25, fontFamily: 'var(--font-sans)', letterSpacing: 0 }}>
-                      {sortCol === col ? (sortDir === 'asc' ? '↑' : '↓') : '↕'}
-                    </span>
-                  </th>
-                ))}
-                <th style={{ ...s.th, width: '80px' }}></th>
-              </tr>
-            </thead>
-            <tbody>
-              {displayed.length === 0 ? (
-                <tr><td colSpan={5} style={s.empty}>
-                  {items.length === 0 ? 'no items yet — add some above' : 'no matches'}
-                </td></tr>
-              ) : displayed.map((item, idx) => (
-                <tr key={item.id} className={fadingOut.has(item.id) ? 'row-pop-out' : fadingIn.has(item.id) ? 'row-pop-in' : undefined} style={idx === displayed.length - 1 ? { } : {}}>
-                  <td style={{ ...s.td, fontWeight: 500 }}>{item.name}</td>
-                  <td style={s.td}><span style={s.badge(item.type)}>{item.type}</span></td>
-                  <td style={s.td}>
-                    <div style={s.qtyCtrl}>
-                      <button style={s.qtyBtn} onClick={() => adjustQty(item, -1)} aria-label="decrease">−</button>
-                      <div style={{ textAlign: 'center', minWidth: '32px' }}>
-                        <div style={s.qtyNum}>{item.quantity}</div>
-                        {item.unit && item.unit_size && (
-                          <div style={{ fontSize: '10px', color: 'var(--text-dim)', fontFamily: 'var(--font-mono)', marginTop: '2px', whiteSpace: 'nowrap' }}>
-                            {item.unit_size} {item.unit}
-                          </div>
-                        )}
-                      </div>
-                      <button style={s.qtyBtn} onClick={() => adjustQty(item, 1)} aria-label="increase">+</button>
-                    </div>
-                  </td>
-                  <td style={s.td}>
-                    <span style={s.logEntry}>{item.last_change || '—'}</span>
-                  </td>
-                  <td style={s.td}>
-                    <button style={s.actionBtn} onClick={() => setModal({ edit: item })}>edit</button>
-                    <button style={s.dangerBtn} onClick={() => deleteItem(item.id)}>del</button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <Select value={filterType || 'all'} onValueChange={(v) => setFilterType(v === 'all' ? '' : v)}>
+          <SelectTrigger className="bg-card text-[13px]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">all types</SelectItem>
+            <SelectItem value="beer">beer</SelectItem>
+            <SelectItem value="seltzer">seltzer</SelectItem>
+            <SelectItem value="cider">cider</SelectItem>
+            <SelectItem value="liquor">liquor</SelectItem>
+            <SelectItem value="other">other</SelectItem>
+          </SelectContent>
+        </Select>
+        <Button variant="outline" onClick={exportCSV}>↓ export</Button>
+        {canAddItems(role) && (
+          <>
+            <Button variant="outline" onClick={() => setModal('bulk')}>≡ bulk add</Button>
+            <Button onClick={() => setModal('add')}>+ add item</Button>
+          </>
         )}
       </div>
 
+      {loading ? (
+        <div className="rounded-xl border border-border p-8 text-center font-mono text-xs text-muted-foreground">
+          loading…
+        </div>
+      ) : !hasRealSections ? (
+        <div className="overflow-hidden rounded-xl border border-border">
+          {renderTable(displayed, items.length === 0 ? 'no items yet — add some above' : 'no matches')}
+        </div>
+      ) : (
+        sections.map(sec => {
+          const sectionItems = displayed.filter(item => item.subsection_id === sec.id)
+          return (
+            <div key={sec.id} className="mb-5">
+              <div className="mb-2 flex items-baseline gap-2">
+                <span className="text-sm font-semibold">{sec.name}</span>
+                <span className="font-mono text-xs text-muted-foreground">{itemCounts[sec.id] || 0}</span>
+              </div>
+              <div className="overflow-hidden rounded-xl border border-border">
+                {renderTable(sectionItems, 'no items in this section')}
+              </div>
+            </div>
+          )
+        })
+      )}
+
       {modal === 'add' && (
-        <ItemModal onSave={addItem} onClose={() => setModal(null)} />
+        <ItemModal onSave={addItem} onClose={() => setModal(null)} packSizes={packSizes} frequentDrinks={frequentDrinks} />
       )}
       {modal === 'bulk' && (
         <BulkModal onSave={bulkAdd} onClose={() => setModal(null)} />
@@ -377,12 +553,31 @@ export default function Inventory({ user, onSignOut }) {
           item={modal.edit}
           onSave={fields => updateItem(modal.edit.id, { ...fields, last_change: `${displayName()} edited · ${now()}` })}
           onClose={() => setModal(null)}
+          packSizes={packSizes}
+        />
+      )}
+      {managingMembers && (
+        <MembersModal
+          inventory={inventory}
+          onClose={() => setManagingMembers(false)}
+          onChanged={onInventoryChanged}
+        />
+      )}
+      {managingPackSizes && (
+        <PackSizesModal
+          inventory={inventory}
+          packSizes={packSizes}
+          onReload={reloadPackSizes}
+          onClose={() => setManagingPackSizes(false)}
+        />
+      )}
+      {managingProfile && (
+        <ProfileModal
+          profile={profile}
+          onClose={() => setManagingProfile(false)}
+          onChanged={onProfileChanged}
         />
       )}
     </div>
   )
-
-  function now() {
-    return new Date().toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
-  }
 }

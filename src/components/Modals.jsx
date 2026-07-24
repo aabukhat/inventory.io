@@ -1,124 +1,53 @@
 import { useState, useEffect } from 'react'
 import { searchProducts, CAN_SIZES, BOTTLE_SIZES, LIQUOR_UNITS, LIQUOR_UNIT_SIZE_MAP } from '../lib/products'
+import { resolvePackSizes } from '../lib/packSizes'
+import { cn } from '@/lib/utils'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/components/ui/select'
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+} from '@/components/ui/dialog'
 
-const TYPES = ['beer', 'seltzer', 'cider', 'liquor', 'other']
+export const TYPES = ['beer', 'seltzer', 'cider', 'liquor', 'other']
 
-const s = {
-  overlay: {
-    position: 'fixed', inset: 0,
-    background: 'rgba(0,0,0,0.6)',
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-    padding: '1rem', zIndex: 100,
-  },
-  modal: {
-    background: 'var(--surface)',
-    border: '1px solid var(--border-strong)',
-    borderRadius: '12px',
-    padding: '1.5rem',
-    width: '100%', maxWidth: '380px',
-  },
-  header: {
-    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-    marginBottom: '1.25rem',
-  },
-  title: { fontSize: '16px', fontWeight: 600 },
-  closeBtn: {
-    background: 'none', border: 'none',
-    color: 'var(--text-muted)', fontSize: '20px', lineHeight: 1,
-    padding: '2px 6px', borderRadius: '4px',
-  },
-  field: { marginBottom: '1rem' },
-  label: {
-    display: 'block', fontSize: '11px',
-    fontFamily: 'var(--font-mono)', letterSpacing: '0.06em',
-    textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '6px',
-  },
-  input: {
-    width: '100%', background: 'var(--surface-2)',
-    border: '1px solid var(--border-strong)',
-    borderRadius: 'var(--radius)', padding: '9px 12px',
-    fontSize: '14px', outline: 'none', boxSizing: 'border-box',
-  },
-  autocompleteWrap: { position: 'relative' },
-  suggestionList: {
-    position: 'absolute', top: '100%', left: 0, right: 0,
-    background: 'var(--surface)', border: '1px solid var(--border-strong)',
-    borderRadius: 'var(--radius)', marginTop: '3px',
-    zIndex: 200, overflow: 'hidden',
-    boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
-  },
-  suggestionItem: (active) => ({
-    padding: '9px 12px', fontSize: '13px', cursor: 'pointer',
-    background: active ? 'var(--surface-2)' : 'transparent',
-    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-    gap: '8px', transition: 'background 0.08s',
-  }),
-  suggestionMeta: {
-    fontSize: '10px', color: 'var(--text-dim)',
-    fontFamily: 'var(--font-mono)', whiteSpace: 'nowrap',
-  },
-  typeGrid: {
-    display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '6px',
-  },
-  typeBtn: (active) => ({
-    padding: '7px 4px', borderRadius: 'var(--radius)',
-    border: `1px solid ${active ? 'var(--accent)' : 'var(--border-strong)'}`,
-    background: active ? 'rgba(200,245,90,0.12)' : 'var(--surface-2)',
-    color: active ? 'var(--accent)' : 'var(--text-muted)',
-    fontSize: '12px', fontWeight: active ? 600 : 400,
-    textAlign: 'center', cursor: 'pointer', transition: 'all 0.1s',
-  }),
-  qtyRow: { display: 'flex', gap: '8px', alignItems: 'stretch' },
-  qtyInput: {
-    width: '72px', background: 'var(--surface-2)',
-    border: '1px solid var(--border-strong)',
-    borderRadius: 'var(--radius)', padding: '9px 12px',
-    fontSize: '14px', outline: 'none', boxSizing: 'border-box',
-    flexShrink: 0,
-  },
-  unitGroup: { display: 'flex', gap: '4px' },
-  unitBtn: (active) => ({
-    padding: '7px 12px', borderRadius: 'var(--radius)',
-    border: `1px solid ${active ? 'var(--accent)' : 'var(--border-strong)'}`,
-    background: active ? 'rgba(200,245,90,0.12)' : 'var(--surface-2)',
-    color: active ? 'var(--accent)' : 'var(--text-muted)',
-    fontSize: '12px', fontWeight: active ? 600 : 400,
-    cursor: 'pointer', transition: 'all 0.1s', whiteSpace: 'nowrap',
-  }),
-  sizeSelect: {
-    flex: 1, background: 'var(--surface-2)',
-    border: '1px solid var(--border-strong)',
-    borderRadius: 'var(--radius)', padding: '9px 10px',
-    fontSize: '13px', outline: 'none', color: 'var(--text)',
-    minWidth: 0,
-  },
-  footer: { display: 'flex', gap: '8px', justifyContent: 'flex-end', marginTop: '1.25rem' },
-  cancelBtn: {
-    padding: '9px 16px', borderRadius: 'var(--radius)',
-    border: '1px solid var(--border-strong)', background: 'none',
-    color: 'var(--text-muted)', fontSize: '13px',
-  },
-  saveBtn: {
-    padding: '9px 20px', borderRadius: 'var(--radius)',
-    border: 'none', background: 'var(--accent)',
-    color: '#0e0e0e', fontSize: '13px', fontWeight: 600,
-  },
-  bulkArea: {
-    width: '100%', background: 'var(--surface-2)',
-    border: '1px solid var(--border-strong)',
-    borderRadius: 'var(--radius)', padding: '9px 12px',
-    fontSize: '12px', fontFamily: 'var(--font-mono)',
-    outline: 'none', resize: 'vertical', minHeight: '120px',
-    color: 'var(--text)',
-  },
+function FieldLabel({ children }) {
+  return (
+    <Label className="mb-1.5 font-mono text-[11px] tracking-wide text-muted-foreground uppercase">
+      {children}
+    </Label>
+  )
 }
 
-export function ItemModal({ item, onSave, onClose }) {
-  const [name, setName] = useState(item?.name || '')
+function PillButton({ active, children, ...props }) {
+  return (
+    <button
+      className={cn(
+        'cursor-pointer rounded-lg border px-3 py-1.5 text-xs whitespace-nowrap transition-colors',
+        active
+          ? 'border-primary bg-primary/10 font-semibold text-primary'
+          : 'border-input bg-secondary font-normal text-muted-foreground'
+      )}
+      {...props}
+    >
+      {children}
+    </button>
+  )
+}
+
+export function ItemModal({ item, onSave, onClose, packSizes = {}, frequentDrinks = [] }) {
+  const [brand, setBrand] = useState(item?.brand || '')
+  const [drinkName, setDrinkName] = useState(item?.drink_name || '')
+  const [flavor, setFlavor] = useState(item?.flavor || '')
   const [type, setType] = useState(item?.type || 'beer')
   const [qty, setQty] = useState(item?.quantity ?? 1)
   const [unit, setUnit] = useState(item?.unit || 'can')
   const [unitSize, setUnitSize] = useState(item?.unit_size || '12oz')
+  const [error, setError] = useState('')
 
   const [suggestions, setSuggestions] = useState([])
   const [activeSuggestion, setActiveSuggestion] = useState(-1)
@@ -126,6 +55,7 @@ export function ItemModal({ item, onSave, onClose }) {
 
   const isLiquor = type === 'liquor'
   const sizes = isLiquor ? Object.values(LIQUOR_UNIT_SIZE_MAP) : (unit === 'can' ? CAN_SIZES : BOTTLE_SIZES)
+  const packSizeOptions = resolvePackSizes(packSizes, type)
 
   // When unit or type changes, ensure unitSize is valid for the current context
   useEffect(() => {
@@ -151,7 +81,7 @@ export function ItemModal({ item, onSave, onClose }) {
   }
 
   function handleNameChange(val) {
-    setName(val)
+    setDrinkName(val)
     setActiveSuggestion(-1)
     const results = val.trim().length >= 1 ? searchProducts(val) : []
     setSuggestions(results)
@@ -159,12 +89,21 @@ export function ItemModal({ item, onSave, onClose }) {
   }
 
   function selectSuggestion(product) {
-    setName(product.name)
+    setDrinkName(product.name)
     setType(product.type)
     setUnit(product.defaultUnit)
     setUnitSize(product.defaultSize)
     setSuggestions([])
     setShowSuggestions(false)
+  }
+
+  function selectFrequent(row) {
+    setBrand(row.brand)
+    setDrinkName(row.drink_name)
+    setFlavor(row.flavor || '')
+    setType(row.type)
+    setUnit(row.unit)
+    setUnitSize(row.unit_size)
   }
 
   function handleNameKeyDown(e) {
@@ -192,43 +131,79 @@ export function ItemModal({ item, onSave, onClose }) {
   }
 
   function submit() {
-    if (!name.trim()) return
-    onSave({ name: name.trim(), type, quantity: Number(qty), unit, unit_size: unitSize })
+    if (!drinkName.trim()) return
+    if (!brand.trim()) { setError('brand is required'); return }
+    setError('')
+    onSave({
+      brand: brand.trim(),
+      drink_name: drinkName.trim(),
+      flavor: flavor.trim() || null,
+      type,
+      quantity: Number(qty),
+      unit,
+      unit_size: unitSize,
+    })
   }
 
   return (
-    <div style={s.overlay} onClick={e => e.target === e.currentTarget && onClose()}>
-      <div style={s.modal}>
-        <div style={s.header}>
-          <span style={s.title}>{item ? 'edit item' : 'add item'}</span>
-          <button style={s.closeBtn} onClick={onClose}>×</button>
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="sm:max-w-[380px]">
+        <DialogHeader>
+          <DialogTitle>{item ? 'edit item' : 'add item'}</DialogTitle>
+        </DialogHeader>
+
+        {!item && frequentDrinks.length > 0 && (
+          <div>
+            <FieldLabel>your usual</FieldLabel>
+            <div className="flex flex-wrap gap-1.5">
+              {frequentDrinks.map((row, i) => (
+                <PillButton key={i} onClick={() => selectFrequent(row)}>
+                  {[row.brand, row.drink_name, row.flavor].filter(Boolean).join(' ')}
+                </PillButton>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div>
+          <FieldLabel>brand</FieldLabel>
+          <Input
+            value={brand}
+            autoFocus
+            autoComplete="off"
+            onChange={e => setBrand(e.target.value)}
+            placeholder="e.g. Modelo"
+          />
         </div>
 
-        <div style={s.field}>
-          <label style={s.label}>name / brand</label>
-          <div style={s.autocompleteWrap}>
-            <input
-              style={s.input}
-              value={name}
-              autoFocus
+        <div>
+          <FieldLabel>drink name</FieldLabel>
+          <div className="relative">
+            <Input
+              value={drinkName}
               autoComplete="off"
               onChange={e => handleNameChange(e.target.value)}
               onKeyDown={handleNameKeyDown}
-              onFocus={() => name.trim().length >= 1 && suggestions.length > 0 && setShowSuggestions(true)}
+              onFocus={() => drinkName.trim().length >= 1 && suggestions.length > 0 && setShowSuggestions(true)}
               onBlur={handleNameBlur}
-              placeholder="e.g. Modelo Especial"
+              placeholder="e.g. Especial"
             />
             {showSuggestions && (
-              <div style={s.suggestionList}>
+              <div className="absolute inset-x-0 top-full z-20 mt-1 overflow-hidden rounded-lg border border-input bg-popover shadow-lg">
                 {suggestions.map((p, i) => (
                   <div
                     key={p.name}
-                    style={s.suggestionItem(i === activeSuggestion)}
+                    className={cn(
+                      'flex cursor-pointer items-center justify-between gap-2 px-3 py-2 text-[13px] transition-colors',
+                      i === activeSuggestion ? 'bg-secondary' : 'bg-transparent'
+                    )}
                     onMouseDown={() => selectSuggestion(p)}
                     onMouseEnter={() => setActiveSuggestion(i)}
                   >
                     <span>{p.name}</span>
-                    <span style={s.suggestionMeta}>{p.type} · {p.defaultUnit} · {p.defaultSize}</span>
+                    <span className="font-mono text-[10px] whitespace-nowrap text-muted-foreground">
+                      {p.type} · {p.defaultUnit} · {p.defaultSize}
+                    </span>
                   </div>
                 ))}
               </div>
@@ -236,59 +211,84 @@ export function ItemModal({ item, onSave, onClose }) {
           </div>
         </div>
 
-        <div style={s.field}>
-          <label style={s.label}>type</label>
-          <div style={s.typeGrid}>
+        <div>
+          <FieldLabel>flavor (optional)</FieldLabel>
+          <Input
+            value={flavor}
+            autoComplete="off"
+            onChange={e => setFlavor(e.target.value)}
+            placeholder="e.g. Black Cherry"
+          />
+        </div>
+
+        <div>
+          <FieldLabel>type</FieldLabel>
+          <div className="grid grid-cols-5 gap-1.5">
             {TYPES.map(t => (
-              <button key={t} style={s.typeBtn(type === t)} onClick={() => handleTypeChange(t)}>{t}</button>
+              <PillButton key={t} active={type === t} onClick={() => handleTypeChange(t)}>
+                {t}
+              </PillButton>
             ))}
           </div>
         </div>
 
-        <div style={s.field}>
-          <label style={s.label}>quantity</label>
-          <div style={s.qtyRow}>
-            <input
-              style={s.qtyInput}
+        <div>
+          <FieldLabel>quantity</FieldLabel>
+          <div className="flex items-stretch gap-2">
+            <Input
               type="number"
               min="0"
               value={qty}
               onChange={e => setQty(e.target.value)}
+              className="w-18 shrink-0"
             />
             {isLiquor ? (
-              <select
-                style={{ ...s.sizeSelect, flex: 1 }}
-                value={unit}
-                onChange={e => handleUnitChange(e.target.value)}
-              >
-                {LIQUOR_UNITS.map(u => (
-                  <option key={u} value={u}>{u} · {LIQUOR_UNIT_SIZE_MAP[u]}</option>
-                ))}
-              </select>
+              <Select value={unit} onValueChange={handleUnitChange}>
+                <SelectTrigger className="flex-1">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {LIQUOR_UNITS.map(u => (
+                    <SelectItem key={u} value={u}>{u} · {LIQUOR_UNIT_SIZE_MAP[u]}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             ) : (
               <>
-                <div style={s.unitGroup}>
-                  <button style={s.unitBtn(unit === 'can')} onClick={() => setUnit('can')}>can</button>
-                  <button style={s.unitBtn(unit === 'bottle')} onClick={() => setUnit('bottle')}>bottle</button>
+                <div className="flex gap-1">
+                  <PillButton active={unit === 'can'} onClick={() => setUnit('can')}>can</PillButton>
+                  <PillButton active={unit === 'bottle'} onClick={() => setUnit('bottle')}>bottle</PillButton>
                 </div>
-                <select
-                  style={s.sizeSelect}
-                  value={unitSize}
-                  onChange={e => setUnitSize(e.target.value)}
-                >
-                  {sizes.map(sz => <option key={sz} value={sz}>{sz}</option>)}
-                </select>
+                <Select value={unitSize} onValueChange={setUnitSize}>
+                  <SelectTrigger className="flex-1">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {sizes.map(sz => <SelectItem key={sz} value={sz}>{sz}</SelectItem>)}
+                  </SelectContent>
+                </Select>
               </>
             )}
           </div>
+          {packSizeOptions.length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {packSizeOptions.map(n => (
+                <PillButton key={n} active={Number(qty) === n} onClick={() => setQty(n)}>
+                  +{n}
+                </PillButton>
+              ))}
+            </div>
+          )}
         </div>
 
-        <div style={s.footer}>
-          <button style={s.cancelBtn} onClick={onClose}>cancel</button>
-          <button style={s.saveBtn} onClick={submit}>save</button>
-        </div>
-      </div>
-    </div>
+        {error && <p className="text-xs text-destructive">{error}</p>}
+
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>cancel</Button>
+          <Button onClick={submit}>save</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }
 
@@ -302,7 +302,9 @@ export function BulkModal({ onSave, onClose }) {
       const rawType = (parts[1] || 'beer').toLowerCase()
       const resolvedType = TYPES.includes(rawType) ? rawType : 'other'
       return {
-        name: parts[0] || 'unknown',
+        brand: null,
+        drink_name: parts[0] || 'unknown',
+        flavor: null,
         type: resolvedType,
         quantity: parseInt(parts[2]) || 1,
         unit: resolvedType === 'liquor' ? 'fifth' : 'can',
@@ -313,25 +315,26 @@ export function BulkModal({ onSave, onClose }) {
   }
 
   return (
-    <div style={s.overlay} onClick={e => e.target === e.currentTarget && onClose()}>
-      <div style={s.modal}>
-        <div style={s.header}>
-          <span style={s.title}>bulk add</span>
-          <button style={s.closeBtn} onClick={onClose}>×</button>
-        </div>
-        <div style={s.field}>
-          <label style={s.label}>one item per line: name, type, quantity</label>
-          <textarea
-            style={s.bulkArea} value={text}
-            onChange={e => setText(e.target.value)} autoFocus
-            placeholder={"Lagunitas IPA, beer, 6\nWhite Claw Black Cherry, seltzer, 12\nAngry Orchard, cider, 4"}
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="sm:max-w-[380px]">
+        <DialogHeader>
+          <DialogTitle>bulk add</DialogTitle>
+        </DialogHeader>
+        <div>
+          <FieldLabel>one item per line: drink name, type, quantity</FieldLabel>
+          <Textarea
+            value={text}
+            onChange={e => setText(e.target.value)}
+            autoFocus
+            className="min-h-[120px] font-mono text-xs"
+            placeholder={'Lagunitas IPA, beer, 6\nWhite Claw Black Cherry, seltzer, 12\nAngry Orchard, cider, 4'}
           />
         </div>
-        <div style={s.footer}>
-          <button style={s.cancelBtn} onClick={onClose}>cancel</button>
-          <button style={s.saveBtn} onClick={submit}>add all</button>
-        </div>
-      </div>
-    </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>cancel</Button>
+          <Button onClick={submit}>add all</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }
