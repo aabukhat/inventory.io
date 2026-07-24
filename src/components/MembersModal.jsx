@@ -3,9 +3,9 @@ import { listMembers, updateMemberRole, removeMember, renameInventory, deleteInv
 import { useRealtimeTable } from '../hooks/useRealtimeTable'
 import InviteMemberModal from './InviteMemberModal'
 import Avatar from './Avatar'
+import FieldLabel from './FieldLabel'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
@@ -82,9 +82,7 @@ export default function MembersModal({ inventory, onClose, onChanged }) {
           </DialogHeader>
 
           <div>
-            <Label className="mb-1.5 font-mono text-[11px] tracking-wide text-muted-foreground uppercase">
-              rename
-            </Label>
+            <FieldLabel>rename</FieldLabel>
             <div className="flex gap-2">
               <Input
                 className="flex-1"
@@ -98,9 +96,7 @@ export default function MembersModal({ inventory, onClose, onChanged }) {
 
           <div>
             <div className="mb-2 flex items-center justify-between">
-              <Label className="font-mono text-[11px] tracking-wide text-muted-foreground uppercase">
-                members
-              </Label>
+              <FieldLabel className="mb-0">members</FieldLabel>
               <Button variant="outline" size="sm" onClick={() => setInviting(true)}>+ invite</Button>
             </div>
             {loading ? (

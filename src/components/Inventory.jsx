@@ -491,7 +491,7 @@ export default function Inventory({ user, profile, inventory, onSignOut, onInven
         onMoveItem={moveItem}
       />
 
-      {moveError && <p className="mb-4 text-[13px] text-destructive">{moveError}</p>}
+      {moveError && <p className="mb-4 text-xs text-destructive">{moveError}</p>}
 
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <Input

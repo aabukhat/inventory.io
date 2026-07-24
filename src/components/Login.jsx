@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import { supabase } from '../lib/supabase'
 import Wordmark from './Wordmark'
+import FieldLabel from './FieldLabel'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 
 export default function Login({ initialMode = 'signin', onBack }) {
   const [mode, setMode] = useState(initialMode) // 'signin' | 'signup'
@@ -53,9 +53,7 @@ export default function Login({ initialMode = 'signin', onBack }) {
           {isSignUp ? 'set up your inventory.io account' : 'welcome back'}
         </p>
         <form onSubmit={handleSubmit} className="flex flex-col gap-1">
-          <Label htmlFor="email" className="mb-1.5 font-mono text-[11px] tracking-wide text-muted-foreground uppercase">
-            email
-          </Label>
+          <FieldLabel htmlFor="email">email</FieldLabel>
           <Input
             id="email"
             type="email"
@@ -67,9 +65,7 @@ export default function Login({ initialMode = 'signin', onBack }) {
             placeholder="you@example.com"
             required
           />
-          <Label htmlFor="password" className="mb-1.5 font-mono text-[11px] tracking-wide text-muted-foreground uppercase">
-            password
-          </Label>
+          <FieldLabel htmlFor="password">password</FieldLabel>
           <Input
             id="password"
             type="password"

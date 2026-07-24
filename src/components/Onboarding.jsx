@@ -2,9 +2,9 @@ import { useState } from 'react'
 import { validateDisplayName } from '../lib/displayName'
 import { setDisplayName } from '../lib/profiles'
 import Wordmark from './Wordmark'
+import FieldLabel from './FieldLabel'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 
 export default function Onboarding({ onDone }) {
   const [name, setName] = useState('')
@@ -41,9 +41,7 @@ export default function Onboarding({ onDone }) {
           what should other members see you as?
         </p>
         <form onSubmit={handleSubmit} className="flex flex-col gap-1">
-          <Label htmlFor="display-name" className="mb-1.5 font-mono text-[11px] tracking-wide text-muted-foreground uppercase">
-            display name
-          </Label>
+          <FieldLabel htmlFor="display-name">display name</FieldLabel>
           <Input
             id="display-name"
             value={name}

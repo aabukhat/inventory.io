@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react'
 import { searchProducts, CAN_SIZES, BOTTLE_SIZES, LIQUOR_UNITS, LIQUOR_UNIT_SIZE_MAP } from '../lib/products'
 import { resolvePackSizes } from '../lib/packSizes'
+import FieldLabel from './FieldLabel'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -14,14 +14,6 @@ import {
 } from '@/components/ui/dialog'
 
 export const TYPES = ['beer', 'seltzer', 'cider', 'liquor', 'other']
-
-function FieldLabel({ children }) {
-  return (
-    <Label className="mb-1.5 font-mono text-[11px] tracking-wide text-muted-foreground uppercase">
-      {children}
-    </Label>
-  )
-}
 
 function PillButton({ active, children, ...props }) {
   return (
