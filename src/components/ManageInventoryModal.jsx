@@ -109,23 +109,6 @@ export default function ManageInventoryModal({ inventory, packSizes, onReloadPac
 
           {canManage && (
             <div>
-              <FieldLabel>icon</FieldLabel>
-              <div className="flex gap-2">
-                <Input
-                  className="w-16 text-center text-base"
-                  value={emoji}
-                  onChange={e => setEmoji(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && handleSaveEmoji()}
-                  placeholder={initials(inventory.name)}
-                  maxLength={8}
-                />
-                <Button variant="outline" size="sm" onClick={handleSaveEmoji}>save</Button>
-              </div>
-            </div>
-          )}
-
-          {canManage && (
-            <div>
               <FieldLabel>rename</FieldLabel>
               <div className="flex gap-2">
                 <Input
@@ -139,10 +122,31 @@ export default function ManageInventoryModal({ inventory, packSizes, onReloadPac
             </div>
           )}
 
-          {canManagePacks && (
-            <div className="flex items-center justify-between">
-              <FieldLabel className="mb-0">pack sizes</FieldLabel>
-              <Button variant="outline" size="sm" onClick={() => setManagingPackSizes(true)}>configure</Button>
+          {(canManage || canManagePacks) && (
+            <div className="flex gap-4">
+              {canManage && (
+                <div className="flex-1">
+                  <FieldLabel>icon</FieldLabel>
+                  <div className="flex gap-2">
+                    <Input
+                      className="w-16 text-center text-base"
+                      value={emoji}
+                      onChange={e => setEmoji(e.target.value)}
+                      onKeyDown={e => e.key === 'Enter' && handleSaveEmoji()}
+                      placeholder={initials(inventory.name)}
+                      maxLength={8}
+                    />
+                    <Button variant="outline" size="sm" onClick={handleSaveEmoji}>save</Button>
+                  </div>
+                </div>
+              )}
+
+              {canManagePacks && (
+                <div className="flex-1">
+                  <FieldLabel>pack sizes</FieldLabel>
+                  <Button variant="outline" size="sm" onClick={() => setManagingPackSizes(true)}>configure</Button>
+                </div>
+              )}
             </div>
           )}
 
