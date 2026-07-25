@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { listMembers, updateMemberRole, removeMember, renameInventory, setInventoryEmoji, deleteInventory } from '../lib/inventories'
 import { useRealtimeTable } from '../hooks/useRealtimeTable'
 import InviteMemberModal from './InviteMemberModal'
-import Avatar from './Avatar'
+import Avatar, { initials } from './Avatar'
 import FieldLabel from './FieldLabel'
 import FormError from './FormError'
 import { Button } from '@/components/ui/button'
@@ -103,7 +103,7 @@ export default function MembersModal({ inventory, onClose, onChanged }) {
                 value={emoji}
                 onChange={e => setEmoji(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && handleSaveEmoji()}
-                placeholder="🍺"
+                placeholder={initials(inventory.name)}
                 maxLength={8}
               />
               <Button variant="outline" size="sm" onClick={handleSaveEmoji}>save</Button>
