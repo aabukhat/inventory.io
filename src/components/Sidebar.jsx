@@ -78,7 +78,7 @@ export default function Sidebar({ inventories, activeInventory, onSelectInventor
           onClick={() => onSelectInventory(personal.id)}
           title={personal.name}
         >
-          🏠
+          {personal.emoji || '🏠'}
         </Circle>
       )}
 

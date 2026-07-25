@@ -2,8 +2,7 @@ import { useState, useEffect, useCallback, Fragment } from 'react'
 import { ChevronRightIcon, ChevronDownIcon } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { ItemModal, BulkModal } from './Modals'
-import MembersModal from './MembersModal'
-import PackSizesModal from './PackSizesModal'
+import ManageInventoryModal from './ManageInventoryModal'
 import ProfileModal from './ProfileModal'
 import Avatar from './Avatar'
 import ThemeToggle from './ThemeToggle'
@@ -40,8 +39,7 @@ export default function Inventory({ user, profile, inventory, onSignOut, onInven
   const [search, setSearch] = useState('')
   const [filterType, setFilterType] = useState('')
   const [modal, setModal] = useState(null) // null | 'add' | 'bulk' | {edit: item}
-  const [managingMembers, setManagingMembers] = useState(false)
-  const [managingPackSizes, setManagingPackSizes] = useState(false)
+  const [managingInventory, setManagingInventory] = useState(false)
   const [managingProfile, setManagingProfile] = useState(false)
   const [fadingOut, setFadingOut] = useState(new Set())
   const [fadingIn, setFadingIn] = useState(new Set())
@@ -441,11 +439,8 @@ export default function Inventory({ user, profile, inventory, onSignOut, onInven
 
       <div className="mb-1 flex items-center gap-2.5">
         <h1 className="text-[22px] font-semibold">{inventory.name}</h1>
-        {inventory.type === 'shared' && canManageMembers(role) && (
-          <Button variant="outline" size="sm" onClick={() => setManagingMembers(true)}>manage</Button>
-        )}
-        {canManagePackSizes(role) && (
-          <Button variant="outline" size="sm" onClick={() => setManagingPackSizes(true)}>pack sizes</Button>
+        {(canManageMembers(role) || canManagePackSizes(role)) && (
+          <Button variant="outline" size="sm" onClick={() => setManagingInventory(true)}>manage</Button>
         )}
       </div>
       <p className="mb-6 text-[13px] text-muted-foreground">updates live</p>
@@ -562,19 +557,13 @@ export default function Inventory({ user, profile, inventory, onSignOut, onInven
           packSizes={packSizes}
         />
       )}
-      {managingMembers && (
-        <MembersModal
-          inventory={inventory}
-          onClose={() => setManagingMembers(false)}
-          onChanged={onInventoryChanged}
-        />
-      )}
-      {managingPackSizes && (
-        <PackSizesModal
+      {managingInventory && (
+        <ManageInventoryModal
           inventory={inventory}
           packSizes={packSizes}
-          onReload={reloadPackSizes}
-          onClose={() => setManagingPackSizes(false)}
+          onReloadPackSizes={reloadPackSizes}
+          onClose={() => setManagingInventory(false)}
+          onChanged={onInventoryChanged}
         />
       )}
       {managingProfile && (
