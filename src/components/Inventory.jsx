@@ -9,13 +9,14 @@ import ThemeToggle from './ThemeToggle'
 import Subsections from './Subsections'
 import Wordmark from './Wordmark'
 import FormError from './FormError'
+import LastChangeCell from './LastChangeCell'
 import { useSubsections } from '../hooks/useSubsections'
 import { usePackSizes } from '../hooks/usePackSizes'
 import { useFrequentDrinks } from '../hooks/useFrequentDrinks'
 import { useRealtimeTable } from '../hooks/useRealtimeTable'
 import { moveDrinks, ITEM_DRAG_MIME } from '../lib/subsections'
 import { recordDrinkAdd } from '../lib/drinkFrequency'
-import { groupItems, dominantType, sumQuantity, latestChange, parseLastChange } from '../lib/variantGrouping'
+import { groupItems, dominantType, sumQuantity, latestChange, formatLastChange } from '../lib/variantGrouping'
 import { TYPE_BADGE_CLASSES } from '../lib/badgeStyles'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -112,7 +113,6 @@ export default function Inventory({ user, profile, inventory, onSignOut, onInven
       ...fields,
       inventory_id: inventory.id,
       subsection_id: uncategorized?.id,
-      last_change: `${displayName()} added · ${now()}`,
     })
     if (!error) {
       await recordDrinkAdd(inventory.id, fields)
@@ -122,12 +122,8 @@ export default function Inventory({ user, profile, inventory, onSignOut, onInven
   }
 
   async function bulkAdd(rows) {
-    const ts = now()
     await supabase.from('drinks').insert(
-      rows.map(r => ({
-        ...r, inventory_id: inventory.id, subsection_id: uncategorized?.id,
-        last_change: `${displayName()} added · ${ts}`,
-      }))
+      rows.map(r => ({ ...r, inventory_id: inventory.id, subsection_id: uncategorized?.id }))
     )
     setModal(null)
   }
@@ -161,10 +157,7 @@ export default function Inventory({ user, profile, inventory, onSignOut, onInven
       }, 450)
       return
     }
-    await supabase.from('drinks').update({
-      quantity: newQty,
-      last_change: `${displayName()} ${delta > 0 ? '+' : ''}${delta} · ${now()}`,
-    }).eq('id', item.id)
+    await supabase.from('drinks').update({ quantity: newQty }).eq('id', item.id)
   }
 
   async function deleteItem(id) {
@@ -172,13 +165,9 @@ export default function Inventory({ user, profile, inventory, onSignOut, onInven
     await supabase.from('drinks').delete().eq('id', id)
   }
 
-  function now() {
-    return new Date().toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
-  }
-
   function exportCSV() {
     const rows = [['brand', 'drink_name', 'flavor', 'type', 'quantity', 'last change'],
-      ...items.map(i => [i.brand || '', i.drink_name, i.flavor || '', i.type, i.quantity, i.last_change || ''])]
+      ...items.map(i => [i.brand || '', i.drink_name, i.flavor || '', i.type, i.quantity, formatLastChange(i) || ''])]
     const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n')
     const a = document.createElement('a')
     a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv)
@@ -201,7 +190,7 @@ export default function Inventory({ user, profile, inventory, onSignOut, onInven
     if (sortCol === 'quantity') {
       cmp = (a.quantity ?? 0) - (b.quantity ?? 0)
     } else if (sortCol === 'last_change') {
-      cmp = parseLastChange(a.last_change) - parseLastChange(b.last_change)
+      cmp = new Date(a.last_change_at || 0) - new Date(b.last_change_at || 0)
     } else if (sortCol === 'drink_name') {
       cmp = brandDrinkName(a).localeCompare(brandDrinkName(b))
     } else {
@@ -293,7 +282,7 @@ export default function Inventory({ user, profile, inventory, onSignOut, onInven
           </div>
         </TableCell>
         <TableCell>
-          <span className="font-mono text-[11px] text-muted-foreground">{item.last_change || '—'}</span>
+          <LastChangeCell item={item} />
         </TableCell>
         {hasRealSections && (
           <TableCell>
@@ -361,7 +350,7 @@ export default function Inventory({ user, profile, inventory, onSignOut, onInven
             <div className="min-w-8 text-center font-mono font-semibold">{sumQuantity(variants)}</div>
           </TableCell>
           <TableCell>
-            <span className="font-mono text-[11px] text-muted-foreground">{latestChange(variants) || '—'}</span>
+            <LastChangeCell item={latestChange(variants)} />
           </TableCell>
           {hasRealSections && (
             <TableCell>
@@ -552,7 +541,7 @@ export default function Inventory({ user, profile, inventory, onSignOut, onInven
       {modal?.edit && (
         <ItemModal
           item={modal.edit}
-          onSave={fields => updateItem(modal.edit.id, { ...fields, last_change: `${displayName()} edited · ${now()}` })}
+          onSave={fields => updateItem(modal.edit.id, fields)}
           onClose={() => setModal(null)}
           packSizes={packSizes}
         />
