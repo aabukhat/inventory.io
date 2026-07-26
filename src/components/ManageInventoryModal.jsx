@@ -1,6 +1,5 @@
-import { useState, useEffect, useCallback } from 'react'
-import { listMembers, updateMemberRole, removeMember, renameInventory, setInventoryEmoji, deleteInventory } from '../lib/inventories'
-import { useRealtimeTable } from '../hooks/useRealtimeTable'
+import { useState } from 'react'
+import { updateMemberRole, removeMember, renameInventory, setInventoryEmoji, deleteInventory } from '../lib/inventories'
 import { canManageMembers, canManagePackSizes } from '../lib/permissions'
 import InviteMemberModal from './InviteMemberModal'
 import PackSizesModal from './PackSizesModal'
@@ -18,40 +17,19 @@ import {
 
 const ROLES = ['viewer', 'contributor', 'editor']
 
-export default function ManageInventoryModal({ inventory, packSizes, onReloadPackSizes, onClose, onChanged }) {
+export default function ManageInventoryModal({
+  inventory, packSizes, onReloadPackSizes, members, membersLoading: loading, onReloadMembers: load, onClose, onChanged,
+}) {
   const role = inventory.role
   const isShared = inventory.type === 'shared'
   const canManage = canManageMembers(role) // owner — same gate the DB's RLS/trigger enforce for icon/rename/members/delete
   const canManagePacks = canManagePackSizes(role) // owner or editor
 
-  const [members, setMembers] = useState([])
-  const [loading, setLoading] = useState(true)
   const [inviting, setInviting] = useState(false)
   const [managingPackSizes, setManagingPackSizes] = useState(false)
   const [name, setName] = useState(inventory.name)
   const [emoji, setEmoji] = useState(inventory.emoji || '')
   const [error, setError] = useState('')
-
-  const load = useCallback(async () => {
-    setLoading(true)
-    const data = await listMembers(inventory.id)
-    setMembers(data)
-    setLoading(false)
-  }, [inventory.id])
-
-  // Personal inventories have no member management UI (there's no one to
-  // invite), so skip the fetch and the subscription below entirely rather
-  // than loading a members list nothing ever shows.
-  useEffect(() => { if (isShared) load() }, [isShared, load])
-
-  // Other members' display names can change while this modal is open (e.g.
-  // someone finishes onboarding elsewhere) — keep the list live.
-  useRealtimeTable({
-    channelName: `members-profiles-changes-${inventory.id}`,
-    table: 'profiles',
-    event: 'UPDATE',
-    enabled: isShared,
-  }, load)
 
   async function handleRoleChange(userId, role) {
     await updateMemberRole(inventory.id, userId, role)

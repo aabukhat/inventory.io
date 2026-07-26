@@ -10,9 +10,11 @@ import Subsections from './Subsections'
 import Wordmark from './Wordmark'
 import FormError from './FormError'
 import LastChangeCell from './LastChangeCell'
+import CollaboratorAvatars from './CollaboratorAvatars'
 import { useSubsections } from '../hooks/useSubsections'
 import { usePackSizes } from '../hooks/usePackSizes'
 import { useFrequentDrinks } from '../hooks/useFrequentDrinks'
+import { useMembers } from '../hooks/useMembers'
 import { useRealtimeTable } from '../hooks/useRealtimeTable'
 import { moveDrinks, ITEM_DRAG_MIME } from '../lib/subsections'
 import { recordDrinkAdd } from '../lib/drinkFrequency'
@@ -53,6 +55,7 @@ export default function Inventory({ user, profile, inventory, onSignOut, onInven
   const { sections, reload: reloadSections } = useSubsections(inventory.id)
   const { packSizes, reload: reloadPackSizes } = usePackSizes(inventory.id)
   const { frequentDrinks, reload: reloadFrequentDrinks } = useFrequentDrinks(inventory.id)
+  const { members, loading: membersLoading, reload: reloadMembers } = useMembers(inventory)
   const uncategorized = sections.find(sec => sec.is_uncategorized)
   const hasRealSections = sections.some(sec => !sec.is_uncategorized)
 
@@ -432,6 +435,7 @@ export default function Inventory({ user, profile, inventory, onSignOut, onInven
           <Button variant="outline" size="sm" onClick={() => setManagingInventory(true)}>manage</Button>
         )}
       </div>
+      <CollaboratorAvatars inventory={inventory} members={members} loading={membersLoading} />
       <p className="mb-6 text-[13px] text-muted-foreground">updates live</p>
 
       <div className="mb-6 grid grid-cols-[repeat(auto-fit,minmax(130px,1fr))] gap-2.5">
@@ -551,6 +555,9 @@ export default function Inventory({ user, profile, inventory, onSignOut, onInven
           inventory={inventory}
           packSizes={packSizes}
           onReloadPackSizes={reloadPackSizes}
+          members={members}
+          membersLoading={membersLoading}
+          onReloadMembers={reloadMembers}
           onClose={() => setManagingInventory(false)}
           onChanged={onInventoryChanged}
         />
