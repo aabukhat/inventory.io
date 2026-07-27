@@ -210,6 +210,7 @@ export default function Inventory({ user, profile, inventory, onSignOut, onInven
   const beerQty   = items.filter(i => i.type === 'beer').reduce((a, i) => a + (i.quantity || 0), 0)
   const seltzQty  = items.filter(i => i.type === 'seltzer').reduce((a, i) => a + (i.quantity || 0), 0)
   const liquorQty = items.filter(i => i.type === 'liquor').reduce((a, i) => a + (i.quantity || 0), 0)
+  const othersQty = items.filter(i => i.type === 'cider' || i.type === 'other').reduce((a, i) => a + (i.quantity || 0), 0)
 
   const canMoveItems = canAddItems(role)
 
@@ -445,13 +446,7 @@ export default function Inventory({ user, profile, inventory, onSignOut, onInven
       <div className="mb-6 grid grid-cols-[repeat(auto-fit,minmax(130px,1fr))] gap-2.5">
         <Card size="sm">
           <CardContent className="flex flex-col gap-1">
-            <div className="font-mono text-[11px] text-muted-foreground">items</div>
-            <div className="text-[22px] font-semibold">{items.length}</div>
-          </CardContent>
-        </Card>
-        <Card size="sm">
-          <CardContent className="flex flex-col gap-1">
-            <div className="font-mono text-[11px] text-muted-foreground">total units</div>
+            <div className="font-mono text-[11px] text-muted-foreground">total drinks</div>
             <div className="text-[22px] font-semibold">{totalQty}</div>
           </CardContent>
         </Card>
@@ -471,6 +466,12 @@ export default function Inventory({ user, profile, inventory, onSignOut, onInven
           <CardContent className="flex flex-col gap-1">
             <div className="font-mono text-[11px] text-muted-foreground">liquor</div>
             <div className="text-[22px] font-semibold">{liquorQty}</div>
+          </CardContent>
+        </Card>
+        <Card size="sm">
+          <CardContent className="flex flex-col gap-1">
+            <div className="font-mono text-[11px] text-muted-foreground">others</div>
+            <div className="text-[22px] font-semibold">{othersQty}</div>
           </CardContent>
         </Card>
       </div>
