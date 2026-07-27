@@ -86,10 +86,27 @@ export async function listMembers(inventoryId) {
     .in('id', members.map(m => m.user_id))
   if (profilesError) throw profilesError
 
+  // "Recently viewed" data (Epic 3 / Story 3.3) — best-effort: a missing
+  // row just means that member has no last_viewed_at yet, not an error.
+  const { data: views } = await supabase
+    .from('inventory_views')
+    .select('user_id, last_viewed_at')
+    .eq('inventory_id', inventoryId)
+  const lastViewedByUser = Object.fromEntries((views || []).map(v => [v.user_id, v.last_viewed_at]))
+
   const profileById = Object.fromEntries(profiles.map(p => [p.id, p]))
   return members
-    .map(m => ({ ...m, profile: profileById[m.user_id] }))
+    .map(m => ({ ...m, profile: profileById[m.user_id], last_viewed_at: lastViewedByUser[m.user_id] || null }))
     .sort((a, b) => a.role.localeCompare(b.role))
+}
+
+// Epic 3 / Story 3.3: upserted by usePresence.js on mount and periodically
+// while an inventory is open, so other viewers can show a "recently viewed"
+// ring for someone who isn't currently present/focused.
+export async function recordInventoryView(inventoryId, userId) {
+  await supabase
+    .from('inventory_views')
+    .upsert({ inventory_id: inventoryId, user_id: userId, last_viewed_at: new Date().toISOString() }, { onConflict: 'user_id,inventory_id' })
 }
 
 export async function updateMemberRole(inventoryId, userId, role) {

@@ -6,9 +6,18 @@ export function initials(name) {
   return (name || '?').trim().charAt(0).toUpperCase()
 }
 
-export default function Avatar({ profile, size = 32, className }) {
+// `ringColor` (Epic 3 / Story 3.3): an optional presence indicator ring,
+// stacked outside the normal background-colored separator ring via a double
+// box-shadow so both remain visible together. Any CSS color string,
+// including one with an alpha component for a "recently viewed" dimmer look.
+export default function Avatar({ profile, size = 32, className, ringColor }) {
   const url = avatarPublicUrl(profile?.avatar_url)
-  const style = { width: size, height: size, fontSize: size * 0.42 }
+  const style = {
+    width: size,
+    height: size,
+    fontSize: size * 0.42,
+    ...(ringColor ? { boxShadow: `0 0 0 2px var(--background), 0 0 0 4px ${ringColor}` } : {}),
+  }
 
   if (url) {
     return (

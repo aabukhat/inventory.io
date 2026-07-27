@@ -9,16 +9,29 @@ export function useMembers(inventory) {
   const [members, setMembers] = useState([])
   const [loading, setLoading] = useState(true)
 
-  const reload = useCallback(async () => {
+  // `silent` skips the loading flicker for the periodic background refresh
+  // below, which exists only to keep last_viewed_at fresh (Story 3.3), not
+  // to signal a real data transition the way the initial load/realtime
+  // reloads do.
+  const reload = useCallback(async (silent = false) => {
     if (!isShared) return
-    setLoading(true)
+    if (!silent) setLoading(true)
     setMembers(await listMembers(inventory.id))
-    setLoading(false)
+    if (!silent) setLoading(false)
   }, [inventory?.id, isShared])
 
   useEffect(() => {
     if (isShared) reload()
     else setLoading(false)
+  }, [isShared, reload])
+
+  // Keeps "recently viewed" (Story 3.3) reasonably fresh across other
+  // viewers' open tabs — inventory_views isn't realtime-subscribed (see its
+  // migration), so this is the freshness mechanism for that column instead.
+  useEffect(() => {
+    if (!isShared) return
+    const interval = setInterval(() => reload(true), 120_000)
+    return () => clearInterval(interval)
   }, [isShared, reload])
 
   useRealtimeTable({
