@@ -23,6 +23,14 @@ export function normalizeKey(brand, drinkName) {
   return `${(brand || '').trim().toLowerCase()}::${(drinkName || '').trim().toLowerCase()}`
 }
 
+// Combined display label for anything shaped like a drink/product row
+// (brand + drink_name + flavor) — shared by inventory rows, product
+// catalog suggestions, and the single-field item modal so the three never
+// drift into slightly different join logic.
+export function formatDrinkLabel({ brand, drink_name, flavor } = {}) {
+  return [brand, drink_name, flavor].filter(Boolean).join(' ')
+}
+
 // items is the already filtered/sorted array for one subsection's table.
 // Returns entries in first-seen order: { kind: 'single', item } or
 // { kind: 'group', key, items }. Groups that end up with only one member

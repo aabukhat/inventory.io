@@ -14,12 +14,13 @@ import CollaboratorAvatars from './CollaboratorAvatars'
 import { useSubsections } from '../hooks/useSubsections'
 import { usePackSizes } from '../hooks/usePackSizes'
 import { useFrequentDrinks } from '../hooks/useFrequentDrinks'
+import { useProducts } from '../hooks/useProducts'
 import { useMembers } from '../hooks/useMembers'
 import { usePresence } from '../hooks/usePresence'
 import { useRealtimeTable } from '../hooks/useRealtimeTable'
 import { moveDrinks, ITEM_DRAG_MIME } from '../lib/subsections'
 import { recordDrinkAdd } from '../lib/drinkFrequency'
-import { groupItems, dominantType, sumQuantity, latestChange, formatLastChange } from '../lib/variantGrouping'
+import { groupItems, dominantType, sumQuantity, latestChange, formatLastChange, formatDrinkLabel } from '../lib/variantGrouping'
 import { TYPE_BADGE_CLASSES } from '../lib/badgeStyles'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -56,6 +57,7 @@ export default function Inventory({ user, profile, inventory, onSignOut, onInven
   const { sections, reload: reloadSections } = useSubsections(inventory.id)
   const { packSizes, reload: reloadPackSizes } = usePackSizes(inventory.id)
   const { frequentDrinks, reload: reloadFrequentDrinks } = useFrequentDrinks(inventory.id)
+  const { products } = useProducts()
   const { members, loading: membersLoading, reload: reloadMembers } = useMembers(inventory)
   const { activeUserIds } = usePresence(inventory, user)
   const uncategorized = sections.find(sec => sec.is_uncategorized)
@@ -231,7 +233,7 @@ export default function Inventory({ user, profile, inventory, onSignOut, onInven
   }
 
   function itemLabel(item) {
-    return [item.brand, item.drink_name, item.flavor].filter(Boolean).join(' ')
+    return formatDrinkLabel(item)
   }
 
   function renderItemRow(item, { nested = false } = {}) {
@@ -539,7 +541,7 @@ export default function Inventory({ user, profile, inventory, onSignOut, onInven
       )}
 
       {modal === 'add' && (
-        <ItemModal onSave={addItem} onClose={() => setModal(null)} packSizes={packSizes} frequentDrinks={frequentDrinks} />
+        <ItemModal onSave={addItem} onClose={() => setModal(null)} packSizes={packSizes} frequentDrinks={frequentDrinks} products={products} />
       )}
       {modal === 'bulk' && (
         <BulkModal onSave={bulkAdd} onClose={() => setModal(null)} />
@@ -550,6 +552,7 @@ export default function Inventory({ user, profile, inventory, onSignOut, onInven
           onSave={fields => updateItem(modal.edit.id, fields)}
           onClose={() => setModal(null)}
           packSizes={packSizes}
+          products={products}
         />
       )}
       {managingInventory && (
