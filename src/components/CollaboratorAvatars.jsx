@@ -54,75 +54,82 @@ export default function CollaboratorAvatars({ inventory, members, loading, activ
     return () => clearInterval(interval)
   }, [])
 
-  if (inventory.type !== 'shared' || (loading && members.length === 0)) return null
-  if (members.length === 0) return null
+  // Reserves this row's height (avatar size + bottom margin) unconditionally
+  // — for a personal inventory, while a shared inventory's members are still
+  // loading, and once they've loaded — so switching between inventories or
+  // the members fetch resolving never shifts the stat cards/table below it.
+  const ready = inventory.type === 'shared' && !(loading && members.length === 0) && members.length > 0
 
-  const overflow = members.length > VISIBLE
+  const overflow = ready && members.length > VISIBLE
   const shown = overflow ? members.slice(0, VISIBLE - 1) : members
   const extra = members.length - shown.length
 
   return (
-    <>
-      <button
-        type="button"
-        onClick={() => setShowAll(true)}
-        className="mb-4 flex -space-x-2 border-none bg-none p-0"
-        aria-label="show collaborators"
-      >
-        {shown.map(m => (
-          <Avatar
-            key={m.user_id}
-            profile={m.profile}
-            size={24}
-            ringColor={ringColorFor(m, presenceState(m, activeUserIds, now))}
-          />
-        ))}
-        {overflow && (
-          <div
-            style={{ width: 24, height: 24, boxShadow: '0 0 0 2px var(--background)' }}
-            className="flex shrink-0 items-center justify-center rounded-full bg-secondary font-mono text-[10px] text-muted-foreground"
+    <div className="mb-4 h-6">
+      {ready && (
+        <>
+          <button
+            type="button"
+            onClick={() => setShowAll(true)}
+            className="flex -space-x-2 border-none bg-none p-0"
+            aria-label="show collaborators"
           >
-            +{extra}
-          </div>
-        )}
-      </button>
+            {shown.map(m => (
+              <Avatar
+                key={m.user_id}
+                profile={m.profile}
+                size={24}
+                ringColor={ringColorFor(m, presenceState(m, activeUserIds, now))}
+              />
+            ))}
+            {overflow && (
+              <div
+                style={{ width: 24, height: 24, boxShadow: '0 0 0 2px var(--background)' }}
+                className="flex shrink-0 items-center justify-center rounded-full bg-secondary font-mono text-[10px] text-muted-foreground"
+              >
+                +{extra}
+              </div>
+            )}
+          </button>
 
-      {showAll && (
-        <Dialog open onOpenChange={(open) => !open && setShowAll(false)}>
-          <DialogContent className="sm:max-w-[380px]">
-            <DialogHeader>
-              <DialogTitle>who has access</DialogTitle>
-            </DialogHeader>
-            <div className="flex flex-col gap-1.5">
-              {members.map(m => {
-                const state = presenceState(m, activeUserIds, now)
-                return (
-                  <div
-                    key={m.user_id}
-                    className="flex items-center gap-2 rounded-lg border border-border bg-secondary px-2.5 py-2"
-                  >
-                    <Avatar profile={m.profile} size={22} ringColor={ringColorFor(m, state)} />
-                    <span
-                      className="flex-1 overflow-hidden text-[13px] text-ellipsis whitespace-nowrap"
-                      title={m.profile?.email}
-                    >
-                      {m.profile?.display_name || m.profile?.email || m.user_id}
-                    </span>
-                    {statusLabel(m, state, now) && (
-                      <span className="font-mono text-[10px] whitespace-nowrap text-muted-foreground">
-                        {statusLabel(m, state, now)}
-                      </span>
-                    )}
-                    <span className="font-mono text-[11px] tracking-wide text-muted-foreground uppercase">
-                      {m.role}
-                    </span>
-                  </div>
-                )
-              })}
-            </div>
-          </DialogContent>
-        </Dialog>
+          {showAll && (
+            <Dialog open onOpenChange={(open) => !open && setShowAll(false)}>
+              <DialogContent className="sm:max-w-[380px]">
+                <DialogHeader>
+                  <DialogTitle>who has access</DialogTitle>
+                </DialogHeader>
+                <div className="flex flex-col gap-1.5">
+                  {members.map(m => {
+                    const state = presenceState(m, activeUserIds, now)
+                    return (
+                      <div
+                        key={m.user_id}
+                        className="flex items-center gap-2 rounded-lg border border-border bg-secondary px-2.5 py-2"
+                      >
+                        <Avatar profile={m.profile} size={22} ringColor={ringColorFor(m, state)} />
+                        <span
+                          className="flex-1 overflow-hidden text-[13px] text-ellipsis whitespace-nowrap"
+                          title={m.profile?.email}
+                        >
+                          {m.profile?.display_name || m.profile?.email || m.user_id}
+                        </span>
+                        {statusLabel(m, state, now) && (
+                          <span className="font-mono text-[10px] whitespace-nowrap text-muted-foreground">
+                            {statusLabel(m, state, now)}
+                          </span>
+                        )}
+                        <span className="font-mono text-[11px] tracking-wide text-muted-foreground uppercase">
+                          {m.role}
+                        </span>
+                      </div>
+                    )
+                  })}
+                </div>
+              </DialogContent>
+            </Dialog>
+          )}
+        </>
       )}
-    </>
+    </div>
   )
 }
