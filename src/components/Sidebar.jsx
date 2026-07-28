@@ -1,15 +1,14 @@
 import { useState } from 'react'
 import { createSharedInventory } from '../lib/inventories'
+import { initials } from './Avatar'
+import FieldLabel from './FieldLabel'
+import FormError from './FormError'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from '@/components/ui/dialog'
-
-function initials(name) {
-  return (name || '?').trim().charAt(0).toUpperCase()
-}
 
 function Circle({ active, title, onClick, children }) {
   return (
@@ -19,7 +18,7 @@ function Circle({ active, title, onClick, children }) {
         'rounded-full border text-sm font-semibold transition-colors',
         active
           ? 'border-primary bg-primary text-primary-foreground'
-          : 'border-input bg-secondary text-muted-foreground hover:border-[var(--border-strong)]'
+          : 'border-input bg-secondary text-muted-foreground hover:border-border-strong'
       )}
       onClick={onClick}
       title={title}
@@ -79,11 +78,11 @@ export default function Sidebar({ inventories, activeInventory, onSelectInventor
           onClick={() => onSelectInventory(personal.id)}
           title={personal.name}
         >
-          🏠
+          {personal.emoji || '🏠'}
         </Circle>
       )}
 
-      <div className="h-px w-8 shrink-0 bg-[var(--border-strong)]" />
+      <div className="h-px w-8 shrink-0 bg-border-strong" />
 
       <div className="flex w-full flex-1 flex-col items-center gap-2.5 overflow-y-auto">
         {ownedShared.map(inv => (
@@ -93,7 +92,7 @@ export default function Sidebar({ inventories, activeInventory, onSelectInventor
             onClick={() => onSelectInventory(inv.id)}
             title={`${inv.name} — owned by you`}
           >
-            {initials(inv.name)}
+            {inv.emoji || initials(inv.name)}
           </Circle>
         ))}
 
@@ -108,7 +107,7 @@ export default function Sidebar({ inventories, activeInventory, onSelectInventor
               onClick={() => onSelectInventory(inv.id)}
               title={`${inv.name} — shared with you (${inv.role})`}
             >
-              {initials(inv.name)}
+              {inv.emoji || initials(inv.name)}
             </Circle>
             <span className="absolute -right-0.5 -bottom-0.5 h-2.5 w-2.5 rounded-full border-2 border-[var(--surface)] bg-[var(--text-dim)]" />
           </div>
@@ -132,9 +131,7 @@ export default function Sidebar({ inventories, activeInventory, onSelectInventor
           </DialogHeader>
 
           <div>
-            <label className="mb-1.5 block font-mono text-[11px] tracking-wide text-muted-foreground uppercase">
-              name
-            </label>
+            <FieldLabel>name</FieldLabel>
             <Input
               value={name}
               autoFocus
@@ -142,7 +139,7 @@ export default function Sidebar({ inventories, activeInventory, onSelectInventor
               onKeyDown={e => e.key === 'Enter' && handleCreate()}
               placeholder="e.g. Household"
             />
-            {error && <p className="mt-2 text-xs text-destructive">{error}</p>}
+            <FormError className="mt-2">{error}</FormError>
           </div>
 
           <DialogFooter>

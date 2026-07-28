@@ -7,6 +7,7 @@ import Sidebar from './components/Sidebar'
 import { supabase } from './lib/supabase'
 import { useInventories } from './hooks/useInventories'
 import { useProfile } from './hooks/useProfile'
+import { hexForToken } from './lib/colorPalette'
 
 export default function App() {
   const [user, setUser] = useState(null)
@@ -21,6 +22,23 @@ export default function App() {
   useEffect(() => {
     document.documentElement.dataset.theme = profile?.theme_preference === 'light' ? 'light' : 'dark'
   }, [profile?.theme_preference])
+
+  // Picking a favorite color re-themes the whole app's accent, not just the
+  // avatar fallback — sets a --accent-pick custom property inline (so
+  // colorPalette.js stays the only place the actual hex values live) plus
+  // a data-accent attribute index.css keys off of to know a color is
+  // active at all, since a plain CSS var() fallback can't express "use a
+  // completely different formula when unset" the way this needs.
+  useEffect(() => {
+    const html = document.documentElement
+    if (profile?.favorite_color) {
+      html.style.setProperty('--accent-pick', hexForToken(profile.favorite_color))
+      html.dataset.accent = profile.favorite_color
+    } else {
+      html.style.removeProperty('--accent-pick')
+      delete html.dataset.accent
+    }
+  }, [profile?.favorite_color])
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {

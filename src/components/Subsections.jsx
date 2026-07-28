@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { addSubsection, reorderSubsections, deleteSubsection, ITEM_DRAG_MIME } from '../lib/subsections'
 import { SUBSECTION_PRESETS } from '../lib/subsectionPresets'
 import { canManageSubsections } from '../lib/permissions'
+import FieldLabel from './FieldLabel'
+import FormError from './FormError'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -120,15 +122,13 @@ export default function Subsections({ inventory, role, sections, itemCounts, onR
 
   return (
     <div className="mb-6">
-      <label className="mb-2 block font-mono text-[11px] tracking-wide text-muted-foreground uppercase">
-        sections
-      </label>
+      <FieldLabel className="mb-2">sections</FieldLabel>
       <div className="flex flex-wrap items-stretch gap-2.5">
         {visibleSections.map(sec => (
           <div
             key={sec.id}
             className={cn(
-              'relative min-w-[120px] cursor-grab rounded-[10px] border bg-card px-3.5 py-2.5 transition-colors',
+              'relative min-w-[120px] cursor-grab rounded-xl border bg-card px-3.5 py-2.5 transition-colors',
               dropTargetId === sec.id ? 'border-primary' : 'border-border',
               dragId === sec.id ? 'opacity-40' : 'opacity-100'
             )}
@@ -158,7 +158,7 @@ export default function Subsections({ inventory, role, sections, itemCounts, onR
         {canManage && (
           <Button
             variant="outline"
-            className="min-w-[120px] rounded-[10px] border-dashed text-muted-foreground"
+            className="min-w-[120px] rounded-xl border-dashed text-muted-foreground"
             onClick={() => { setError(''); setAdding(true) }}
           >
             + add subsection
@@ -166,7 +166,7 @@ export default function Subsections({ inventory, role, sections, itemCounts, onR
         )}
       </div>
 
-      {error && !adding && <p className="mt-2 text-xs text-destructive">{error}</p>}
+      {!adding && <FormError className="mt-2">{error}</FormError>}
 
       <Dialog open={adding} onOpenChange={(open) => !open && closeAdd()}>
         <DialogContent className="sm:max-w-[320px]">
@@ -202,7 +202,7 @@ export default function Subsections({ inventory, role, sections, itemCounts, onR
             <Button variant="outline" onClick={handleAddCustom}>add</Button>
           </div>
 
-          {error && <p className="text-xs text-destructive">{error}</p>}
+          <FormError>{error}</FormError>
         </DialogContent>
       </Dialog>
     </div>

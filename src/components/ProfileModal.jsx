@@ -5,10 +5,11 @@ import { validateAvatarFile, uploadAvatar, removeAvatar } from '../lib/avatar'
 import { COLOR_PALETTE } from '../lib/colorPalette'
 import Avatar from './Avatar'
 import ThemeToggle from './ThemeToggle'
+import FieldLabel from './FieldLabel'
+import FormError from './FormError'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from '@/components/ui/dialog'
@@ -113,9 +114,7 @@ export default function ProfileModal({ profile, onClose, onChanged }) {
         </div>
 
         <div>
-          <Label className="mb-1.5 font-mono text-[11px] tracking-wide text-muted-foreground uppercase">
-            favorite color
-          </Label>
+          <FieldLabel>favorite color</FieldLabel>
           <div className="flex flex-wrap gap-2">
             {COLOR_PALETTE.map(c => (
               <button
@@ -136,9 +135,7 @@ export default function ProfileModal({ profile, onClose, onChanged }) {
         </div>
 
         <div>
-          <Label className="mb-1.5 font-mono text-[11px] tracking-wide text-muted-foreground uppercase">
-            theme
-          </Label>
+          <FieldLabel>theme</FieldLabel>
           <div className="flex items-center gap-2">
             <ThemeToggle profile={profile} onChanged={onChanged} />
             <span className="text-[13px] text-muted-foreground">
@@ -148,16 +145,12 @@ export default function ProfileModal({ profile, onClose, onChanged }) {
         </div>
 
         <div>
-          <Label className="mb-1.5 font-mono text-[11px] tracking-wide text-muted-foreground uppercase">
-            email
-          </Label>
+          <FieldLabel>email</FieldLabel>
           <p className="text-[13px] text-muted-foreground">{profile.email}</p>
         </div>
 
         <div>
-          <Label htmlFor="profile-display-name" className="mb-1.5 font-mono text-[11px] tracking-wide text-muted-foreground uppercase">
-            display name
-          </Label>
+          <FieldLabel htmlFor="profile-display-name">display name</FieldLabel>
           <Input
             id="profile-display-name"
             value={name}
@@ -169,7 +162,7 @@ export default function ProfileModal({ profile, onClose, onChanged }) {
           />
         </div>
 
-        {error && <p className="text-xs text-destructive">{error}</p>}
+        <FormError>{error}</FormError>
 
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>cancel</Button>

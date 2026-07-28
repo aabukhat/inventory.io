@@ -2,25 +2,31 @@ import { useState, useEffect, useCallback, Fragment } from 'react'
 import { ChevronRightIcon, ChevronDownIcon } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { ItemModal, BulkModal } from './Modals'
-import MembersModal from './MembersModal'
-import PackSizesModal from './PackSizesModal'
+import ManageInventoryModal from './ManageInventoryModal'
 import ProfileModal from './ProfileModal'
 import Avatar from './Avatar'
 import ThemeToggle from './ThemeToggle'
 import Subsections from './Subsections'
+import Wordmark from './Wordmark'
+import FormError from './FormError'
+import LastChangeCell from './LastChangeCell'
+import CollaboratorAvatars from './CollaboratorAvatars'
 import { useSubsections } from '../hooks/useSubsections'
 import { usePackSizes } from '../hooks/usePackSizes'
 import { useFrequentDrinks } from '../hooks/useFrequentDrinks'
+import { useProducts } from '../hooks/useProducts'
+import { useMembers } from '../hooks/useMembers'
+import { usePresence } from '../hooks/usePresence'
 import { useRealtimeTable } from '../hooks/useRealtimeTable'
 import { moveDrinks, ITEM_DRAG_MIME } from '../lib/subsections'
 import { recordDrinkAdd } from '../lib/drinkFrequency'
-import { groupItems, dominantType, sumQuantity, latestChange, parseLastChange } from '../lib/variantGrouping'
+import { groupItems, dominantType, sumQuantity, latestChange, formatLastChange, formatDrinkLabel } from '../lib/variantGrouping'
 import { TYPE_BADGE_CLASSES } from '../lib/badgeStyles'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
-import { Card } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
@@ -38,8 +44,7 @@ export default function Inventory({ user, profile, inventory, onSignOut, onInven
   const [search, setSearch] = useState('')
   const [filterType, setFilterType] = useState('')
   const [modal, setModal] = useState(null) // null | 'add' | 'bulk' | {edit: item}
-  const [managingMembers, setManagingMembers] = useState(false)
-  const [managingPackSizes, setManagingPackSizes] = useState(false)
+  const [managingInventory, setManagingInventory] = useState(false)
   const [managingProfile, setManagingProfile] = useState(false)
   const [fadingOut, setFadingOut] = useState(new Set())
   const [fadingIn, setFadingIn] = useState(new Set())
@@ -52,6 +57,9 @@ export default function Inventory({ user, profile, inventory, onSignOut, onInven
   const { sections, reload: reloadSections } = useSubsections(inventory.id)
   const { packSizes, reload: reloadPackSizes } = usePackSizes(inventory.id)
   const { frequentDrinks, reload: reloadFrequentDrinks } = useFrequentDrinks(inventory.id)
+  const { products } = useProducts()
+  const { members, loading: membersLoading, reload: reloadMembers } = useMembers(inventory)
+  const { activeUserIds } = usePresence(inventory, user)
   const uncategorized = sections.find(sec => sec.is_uncategorized)
   const hasRealSections = sections.some(sec => !sec.is_uncategorized)
 
@@ -112,7 +120,6 @@ export default function Inventory({ user, profile, inventory, onSignOut, onInven
       ...fields,
       inventory_id: inventory.id,
       subsection_id: uncategorized?.id,
-      last_change: `${displayName()} added · ${now()}`,
     })
     if (!error) {
       await recordDrinkAdd(inventory.id, fields)
@@ -122,12 +129,8 @@ export default function Inventory({ user, profile, inventory, onSignOut, onInven
   }
 
   async function bulkAdd(rows) {
-    const ts = now()
     await supabase.from('drinks').insert(
-      rows.map(r => ({
-        ...r, inventory_id: inventory.id, subsection_id: uncategorized?.id,
-        last_change: `${displayName()} added · ${ts}`,
-      }))
+      rows.map(r => ({ ...r, inventory_id: inventory.id, subsection_id: uncategorized?.id }))
     )
     setModal(null)
   }
@@ -161,10 +164,7 @@ export default function Inventory({ user, profile, inventory, onSignOut, onInven
       }, 450)
       return
     }
-    await supabase.from('drinks').update({
-      quantity: newQty,
-      last_change: `${displayName()} ${delta > 0 ? '+' : ''}${delta} · ${now()}`,
-    }).eq('id', item.id)
+    await supabase.from('drinks').update({ quantity: newQty }).eq('id', item.id)
   }
 
   async function deleteItem(id) {
@@ -172,13 +172,9 @@ export default function Inventory({ user, profile, inventory, onSignOut, onInven
     await supabase.from('drinks').delete().eq('id', id)
   }
 
-  function now() {
-    return new Date().toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
-  }
-
   function exportCSV() {
     const rows = [['brand', 'drink_name', 'flavor', 'type', 'quantity', 'last change'],
-      ...items.map(i => [i.brand || '', i.drink_name, i.flavor || '', i.type, i.quantity, i.last_change || ''])]
+      ...items.map(i => [i.brand || '', i.drink_name, i.flavor || '', i.type, i.quantity, formatLastChange(i) || ''])]
     const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n')
     const a = document.createElement('a')
     a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv)
@@ -201,7 +197,7 @@ export default function Inventory({ user, profile, inventory, onSignOut, onInven
     if (sortCol === 'quantity') {
       cmp = (a.quantity ?? 0) - (b.quantity ?? 0)
     } else if (sortCol === 'last_change') {
-      cmp = parseLastChange(a.last_change) - parseLastChange(b.last_change)
+      cmp = new Date(a.last_change_at || 0) - new Date(b.last_change_at || 0)
     } else if (sortCol === 'drink_name') {
       cmp = brandDrinkName(a).localeCompare(brandDrinkName(b))
     } else {
@@ -214,6 +210,7 @@ export default function Inventory({ user, profile, inventory, onSignOut, onInven
   const beerQty   = items.filter(i => i.type === 'beer').reduce((a, i) => a + (i.quantity || 0), 0)
   const seltzQty  = items.filter(i => i.type === 'seltzer').reduce((a, i) => a + (i.quantity || 0), 0)
   const liquorQty = items.filter(i => i.type === 'liquor').reduce((a, i) => a + (i.quantity || 0), 0)
+  const othersQty = items.filter(i => i.type === 'cider' || i.type === 'other').reduce((a, i) => a + (i.quantity || 0), 0)
 
   const canMoveItems = canAddItems(role)
 
@@ -237,7 +234,7 @@ export default function Inventory({ user, profile, inventory, onSignOut, onInven
   }
 
   function itemLabel(item) {
-    return [item.brand, item.drink_name, item.flavor].filter(Boolean).join(' ')
+    return formatDrinkLabel(item)
   }
 
   function renderItemRow(item, { nested = false } = {}) {
@@ -266,7 +263,7 @@ export default function Inventory({ user, profile, inventory, onSignOut, onInven
           <div className="flex items-center gap-2">
             {canDecreaseQty(role) && (
               <button
-                className="flex h-6.5 w-6.5 items-center justify-center rounded-full border border-input bg-secondary text-base transition-colors hover:border-[var(--border-strong)]"
+                className="flex h-6.5 w-6.5 items-center justify-center rounded-full border border-input bg-secondary text-base transition-colors hover:border-border-strong"
                 onClick={() => adjustQty(item, -1, { isVariant: nested })}
                 aria-label="decrease"
               >
@@ -283,7 +280,7 @@ export default function Inventory({ user, profile, inventory, onSignOut, onInven
             </div>
             {canIncreaseQty(role) && (
               <button
-                className="flex h-6.5 w-6.5 items-center justify-center rounded-full border border-input bg-secondary text-base transition-colors hover:border-[var(--border-strong)]"
+                className="flex h-6.5 w-6.5 items-center justify-center rounded-full border border-input bg-secondary text-base transition-colors hover:border-border-strong"
                 onClick={() => adjustQty(item, 1, { isVariant: nested })}
                 aria-label="increase"
               >
@@ -293,7 +290,7 @@ export default function Inventory({ user, profile, inventory, onSignOut, onInven
           </div>
         </TableCell>
         <TableCell>
-          <span className="font-mono text-[11px] text-muted-foreground">{item.last_change || '—'}</span>
+          <LastChangeCell item={item} />
         </TableCell>
         {hasRealSections && (
           <TableCell>
@@ -361,7 +358,7 @@ export default function Inventory({ user, profile, inventory, onSignOut, onInven
             <div className="min-w-8 text-center font-mono font-semibold">{sumQuantity(variants)}</div>
           </TableCell>
           <TableCell>
-            <span className="font-mono text-[11px] text-muted-foreground">{latestChange(variants) || '—'}</span>
+            <LastChangeCell item={latestChange(variants)} />
           </TableCell>
           {hasRealSections && (
             <TableCell>
@@ -419,18 +416,12 @@ export default function Inventory({ user, profile, inventory, onSignOut, onInven
   return (
     <div className="mx-auto max-w-[940px] px-4 pt-6 pb-12">
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-        <button
-          type="button"
-          onClick={onShowLanding}
-          className="cursor-pointer border-none bg-none p-0 font-mono text-xs tracking-wide text-primary uppercase"
-        >
-          🧺 inventory.io
-        </button>
+        <Wordmark onClick={onShowLanding} />
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           <button
             type="button"
             onClick={() => setManagingProfile(true)}
-            className="flex cursor-pointer items-center gap-1.5 border-none bg-none p-0 text-xs text-muted-foreground hover:text-foreground"
+            className="flex items-center gap-1.5 border-none bg-none p-0 text-xs text-muted-foreground hover:text-foreground"
             title={user.email}
           >
             <Avatar profile={profile} size={20} />
@@ -445,35 +436,43 @@ export default function Inventory({ user, profile, inventory, onSignOut, onInven
 
       <div className="mb-1 flex items-center gap-2.5">
         <h1 className="text-[22px] font-semibold">{inventory.name}</h1>
-        {inventory.type === 'shared' && canManageMembers(role) && (
-          <Button variant="outline" size="sm" onClick={() => setManagingMembers(true)}>manage</Button>
-        )}
-        {canManagePackSizes(role) && (
-          <Button variant="outline" size="sm" onClick={() => setManagingPackSizes(true)}>pack sizes</Button>
+        {(canManageMembers(role) || canManagePackSizes(role)) && (
+          <Button variant="outline" size="sm" onClick={() => setManagingInventory(true)}>manage</Button>
         )}
       </div>
+      <CollaboratorAvatars inventory={inventory} members={members} loading={membersLoading} activeUserIds={activeUserIds} />
       <p className="mb-6 text-[13px] text-muted-foreground">updates live</p>
 
       <div className="mb-6 grid grid-cols-[repeat(auto-fit,minmax(130px,1fr))] gap-2.5">
-        <Card className="gap-1 rounded-[10px] px-3.5 py-3">
-          <div className="font-mono text-[11px] text-muted-foreground">items</div>
-          <div className="text-[22px] font-semibold">{items.length}</div>
+        <Card size="sm">
+          <CardContent className="flex flex-col gap-1">
+            <div className="font-mono text-[11px] text-muted-foreground">total drinks</div>
+            <div className="text-[22px] font-semibold">{totalQty}</div>
+          </CardContent>
         </Card>
-        <Card className="gap-1 rounded-[10px] px-3.5 py-3">
-          <div className="font-mono text-[11px] text-muted-foreground">total units</div>
-          <div className="text-[22px] font-semibold">{totalQty}</div>
+        <Card size="sm">
+          <CardContent className="flex flex-col gap-1">
+            <div className="font-mono text-[11px] text-muted-foreground">beers</div>
+            <div className="text-[22px] font-semibold">{beerQty}</div>
+          </CardContent>
         </Card>
-        <Card className="gap-1 rounded-[10px] px-3.5 py-3">
-          <div className="font-mono text-[11px] text-muted-foreground">beers</div>
-          <div className="text-[22px] font-semibold">{beerQty}</div>
+        <Card size="sm">
+          <CardContent className="flex flex-col gap-1">
+            <div className="font-mono text-[11px] text-muted-foreground">seltzers</div>
+            <div className="text-[22px] font-semibold">{seltzQty}</div>
+          </CardContent>
         </Card>
-        <Card className="gap-1 rounded-[10px] px-3.5 py-3">
-          <div className="font-mono text-[11px] text-muted-foreground">seltzers</div>
-          <div className="text-[22px] font-semibold">{seltzQty}</div>
+        <Card size="sm">
+          <CardContent className="flex flex-col gap-1">
+            <div className="font-mono text-[11px] text-muted-foreground">liquor</div>
+            <div className="text-[22px] font-semibold">{liquorQty}</div>
+          </CardContent>
         </Card>
-        <Card className="gap-1 rounded-[10px] px-3.5 py-3">
-          <div className="font-mono text-[11px] text-muted-foreground">liquor</div>
-          <div className="text-[22px] font-semibold">{liquorQty}</div>
+        <Card size="sm">
+          <CardContent className="flex flex-col gap-1">
+            <div className="font-mono text-[11px] text-muted-foreground">others</div>
+            <div className="text-[22px] font-semibold">{othersQty}</div>
+          </CardContent>
         </Card>
       </div>
 
@@ -486,11 +485,11 @@ export default function Inventory({ user, profile, inventory, onSignOut, onInven
         onMoveItem={moveItem}
       />
 
-      {moveError && <p className="mb-4 text-[13px] text-destructive">{moveError}</p>}
+      <FormError className="mb-4">{moveError}</FormError>
 
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <Input
-          className="min-w-40 flex-1 bg-card text-[13px]"
+          className="min-w-40 flex-1 bg-card text-[13px] md:text-[13px]"
           value={search}
           placeholder="search…"
           onChange={e => setSearch(e.target.value)}
@@ -543,7 +542,7 @@ export default function Inventory({ user, profile, inventory, onSignOut, onInven
       )}
 
       {modal === 'add' && (
-        <ItemModal onSave={addItem} onClose={() => setModal(null)} packSizes={packSizes} frequentDrinks={frequentDrinks} />
+        <ItemModal onSave={addItem} onClose={() => setModal(null)} packSizes={packSizes} frequentDrinks={frequentDrinks} products={products} />
       )}
       {modal === 'bulk' && (
         <BulkModal onSave={bulkAdd} onClose={() => setModal(null)} />
@@ -551,24 +550,22 @@ export default function Inventory({ user, profile, inventory, onSignOut, onInven
       {modal?.edit && (
         <ItemModal
           item={modal.edit}
-          onSave={fields => updateItem(modal.edit.id, { ...fields, last_change: `${displayName()} edited · ${now()}` })}
+          onSave={fields => updateItem(modal.edit.id, fields)}
           onClose={() => setModal(null)}
           packSizes={packSizes}
+          products={products}
         />
       )}
-      {managingMembers && (
-        <MembersModal
-          inventory={inventory}
-          onClose={() => setManagingMembers(false)}
-          onChanged={onInventoryChanged}
-        />
-      )}
-      {managingPackSizes && (
-        <PackSizesModal
+      {managingInventory && (
+        <ManageInventoryModal
           inventory={inventory}
           packSizes={packSizes}
-          onReload={reloadPackSizes}
-          onClose={() => setManagingPackSizes(false)}
+          onReloadPackSizes={reloadPackSizes}
+          members={members}
+          membersLoading={membersLoading}
+          onReloadMembers={reloadMembers}
+          onClose={() => setManagingInventory(false)}
+          onChanged={onInventoryChanged}
         />
       )}
       {managingProfile && (

@@ -1,0 +1,17 @@
+-- Bugfix: deleting a drink never disappeared live for anyone (including the
+-- deleter, in some cases) — only after a page reload.
+--
+-- Inventory.jsx's realtime subscription on `drinks` filters on
+-- `inventory_id=eq.<id>` (src/hooks/useRealtimeTable.js). Under Postgres'
+-- default REPLICA IDENTITY (primary key only), a DELETE's WAL record only
+-- contains the row's `id` — not `inventory_id` — so Supabase Realtime can't
+-- evaluate that filter against a DELETE event and never delivers it to
+-- filtered subscribers. INSERT/UPDATE were unaffected (their WAL records
+-- carry the full new row), which is why this went unnoticed: adding and
+-- editing items always updated live, only deleting silently didn't.
+--
+-- Found via the E2E realtime regression test while building out the test
+-- suite — confirmed empirically (the row was actually gone from the
+-- database immediately, but stayed rendered in the UI indefinitely) before
+-- writing this fix, not assumed from the symptom alone.
+alter table public.drinks replica identity full;

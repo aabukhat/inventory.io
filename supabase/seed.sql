@@ -1,0 +1,5 @@
+-- Intentionally empty. supabase/config.toml's [db.seed] block points here so
+-- `supabase db reset` has a file to find; this repo has no static seed data.
+-- The product catalog ships via migration (20260727010000_products_catalog.sql),
+-- and test fixtures (users/inventories/drinks) are created programmatically by
+-- tests/db/helpers/*.js against the real app code path, not from a seed file.

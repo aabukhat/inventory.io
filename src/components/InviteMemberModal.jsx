@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { inviteMember } from '../lib/inventories'
+import FieldLabel from './FieldLabel'
+import FormError from './FormError'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
@@ -40,9 +41,7 @@ export default function InviteMemberModal({ inventoryId, onClose, onInvited }) {
         </DialogHeader>
 
         <div>
-          <Label className="mb-1.5 font-mono text-[11px] tracking-wide text-muted-foreground uppercase">
-            email
-          </Label>
+          <FieldLabel>email</FieldLabel>
           <Input
             value={email}
             autoFocus
@@ -55,9 +54,7 @@ export default function InviteMemberModal({ inventoryId, onClose, onInvited }) {
         </div>
 
         <div>
-          <Label className="mb-1.5 font-mono text-[11px] tracking-wide text-muted-foreground uppercase">
-            role
-          </Label>
+          <FieldLabel>role</FieldLabel>
           <Select value={role} onValueChange={setRole}>
             <SelectTrigger className="w-full">
               <SelectValue />
@@ -68,7 +65,7 @@ export default function InviteMemberModal({ inventoryId, onClose, onInvited }) {
           </Select>
         </div>
 
-        {error && <p className="text-xs text-destructive">{error}</p>}
+        <FormError>{error}</FormError>
 
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>cancel</Button>

@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { TYPES } from './Modals'
 import { savePackSizes, resetPackSizes, resolvePackSizes } from '../lib/packSizes'
+import FieldLabel from './FieldLabel'
+import FormError from './FormError'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -65,12 +67,10 @@ export default function PackSizesModal({ inventory, packSizes, onReload, onClose
             return (
               <div key={type}>
                 <div className="mb-1.5 flex items-center justify-between">
-                  <label className="font-mono text-[11px] tracking-wide text-muted-foreground uppercase">
-                    {type}
-                  </label>
+                  <FieldLabel className="mb-0">{type}</FieldLabel>
                   {isCustom && (
                     <button
-                      className="cursor-pointer font-mono text-[10px] text-muted-foreground underline"
+                      className="font-mono text-[10px] text-muted-foreground underline"
                       onClick={() => reset(type)}
                     >
                       reset to default
@@ -79,7 +79,7 @@ export default function PackSizesModal({ inventory, packSizes, onReload, onClose
                 </div>
                 <div className="flex flex-wrap items-center gap-1.5">
                   {sizes.length === 0 && (
-                    <span className="text-[12px] text-muted-foreground">no pack buttons</span>
+                    <span className="text-[11px] text-muted-foreground">no pack buttons</span>
                   )}
                   {sizes.map(n => (
                     <span
@@ -88,7 +88,7 @@ export default function PackSizesModal({ inventory, packSizes, onReload, onClose
                     >
                       +{n}
                       <button
-                        className="cursor-pointer text-muted-foreground"
+                        className="text-muted-foreground"
                         onClick={() => removeSize(type, n)}
                         aria-label={`remove ${n}`}
                       >
@@ -110,7 +110,7 @@ export default function PackSizesModal({ inventory, packSizes, onReload, onClose
           })}
         </div>
 
-        {error && <p className="text-xs text-destructive">{error}</p>}
+        <FormError>{error}</FormError>
 
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>done</Button>

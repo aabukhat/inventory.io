@@ -1,9 +1,11 @@
 import { useState } from 'react'
 import { validateDisplayName } from '../lib/displayName'
 import { setDisplayName } from '../lib/profiles'
+import Wordmark from './Wordmark'
+import FieldLabel from './FieldLabel'
+import FormError from './FormError'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 
 export default function Onboarding({ onDone }) {
   const [name, setName] = useState('')
@@ -34,15 +36,13 @@ export default function Onboarding({ onDone }) {
   return (
     <div className="flex min-h-dvh items-center justify-center p-8">
       <div className="w-full max-w-[320px]">
-        <div className="mb-10 font-mono text-[13px] tracking-wide text-primary uppercase">🧺 inventory.io</div>
+        <Wordmark className="mb-10" />
         <h1 className="mb-1.5 text-[22px] leading-tight font-semibold">welcome</h1>
         <p className="mb-8 text-[13px] text-muted-foreground">
           what should other members see you as?
         </p>
         <form onSubmit={handleSubmit} className="flex flex-col gap-1">
-          <Label htmlFor="display-name" className="mb-1.5 font-mono text-[11px] tracking-wide text-muted-foreground uppercase">
-            display name
-          </Label>
+          <FieldLabel htmlFor="display-name">display name</FieldLabel>
           <Input
             id="display-name"
             value={name}
@@ -57,7 +57,7 @@ export default function Onboarding({ onDone }) {
           <Button type="submit" className="w-full py-2.5 text-sm" disabled={saving}>
             {saving ? '…' : 'continue'}
           </Button>
-          {error && <p className="mt-3 text-center text-xs text-destructive">{error}</p>}
+          <FormError className="mt-3 text-center">{error}</FormError>
         </form>
       </div>
     </div>

@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react'
 import { searchProducts, CAN_SIZES, BOTTLE_SIZES, LIQUOR_UNITS, LIQUOR_UNIT_SIZE_MAP } from '../lib/products'
 import { resolvePackSizes } from '../lib/packSizes'
+import { formatDrinkLabel } from '../lib/variantGrouping'
+import FieldLabel from './FieldLabel'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -15,19 +16,11 @@ import {
 
 export const TYPES = ['beer', 'seltzer', 'cider', 'liquor', 'other']
 
-function FieldLabel({ children }) {
-  return (
-    <Label className="mb-1.5 font-mono text-[11px] tracking-wide text-muted-foreground uppercase">
-      {children}
-    </Label>
-  )
-}
-
 function PillButton({ active, children, ...props }) {
   return (
     <button
       className={cn(
-        'cursor-pointer rounded-lg border px-3 py-1.5 text-xs whitespace-nowrap transition-colors',
+        'rounded-lg border px-3 py-1.5 text-xs whitespace-nowrap transition-colors',
         active
           ? 'border-primary bg-primary/10 font-semibold text-primary'
           : 'border-input bg-secondary font-normal text-muted-foreground'
@@ -39,15 +32,21 @@ function PillButton({ active, children, ...props }) {
   )
 }
 
-export function ItemModal({ item, onSave, onClose, packSizes = {}, frequentDrinks = [] }) {
-  const [brand, setBrand] = useState(item?.brand || '')
-  const [drinkName, setDrinkName] = useState(item?.drink_name || '')
-  const [flavor, setFlavor] = useState(item?.flavor || '')
+export function ItemModal({ item, onSave, onClose, packSizes = {}, frequentDrinks = [], products = [] }) {
+  // The original combined label an edit started from — if `name` still
+  // matches this at save time, the item's existing brand/drink_name/flavor/
+  // product_id are kept untouched rather than re-derived from the string.
+  const originalLabel = item ? formatDrinkLabel(item) : ''
+
+  const [name, setName] = useState(originalLabel)
+  // The catalog product (or "your usual" pseudo-product) last explicitly
+  // selected — cleared on every subsequent keystroke, so a save only uses
+  // it if the field still reads exactly what was picked.
+  const [selectedProduct, setSelectedProduct] = useState(null)
   const [type, setType] = useState(item?.type || 'beer')
   const [qty, setQty] = useState(item?.quantity ?? 1)
   const [unit, setUnit] = useState(item?.unit || 'can')
   const [unitSize, setUnitSize] = useState(item?.unit_size || '12oz')
-  const [error, setError] = useState('')
 
   const [suggestions, setSuggestions] = useState([])
   const [activeSuggestion, setActiveSuggestion] = useState(-1)
@@ -81,26 +80,28 @@ export function ItemModal({ item, onSave, onClose, packSizes = {}, frequentDrink
   }
 
   function handleNameChange(val) {
-    setDrinkName(val)
+    setName(val)
+    setSelectedProduct(null)
     setActiveSuggestion(-1)
-    const results = val.trim().length >= 1 ? searchProducts(val) : []
+    const results = val.trim().length >= 1 ? searchProducts(products, val) : []
     setSuggestions(results)
     setShowSuggestions(results.length > 0)
   }
 
   function selectSuggestion(product) {
-    setDrinkName(product.name)
+    setName(formatDrinkLabel(product))
+    setSelectedProduct(product)
     setType(product.type)
-    setUnit(product.defaultUnit)
-    setUnitSize(product.defaultSize)
+    setUnit(product.default_unit)
+    setUnitSize(product.default_size)
     setSuggestions([])
     setShowSuggestions(false)
   }
 
   function selectFrequent(row) {
-    setBrand(row.brand)
-    setDrinkName(row.drink_name)
-    setFlavor(row.flavor || '')
+    const pseudo = { brand: row.brand, drink_name: row.drink_name, flavor: row.flavor }
+    setName(formatDrinkLabel(pseudo))
+    setSelectedProduct(pseudo)
     setType(row.type)
     setUnit(row.unit)
     setUnitSize(row.unit_size)
@@ -131,13 +132,35 @@ export function ItemModal({ item, onSave, onClose, packSizes = {}, frequentDrink
   }
 
   function submit() {
-    if (!drinkName.trim()) return
-    if (!brand.trim()) { setError('brand is required'); return }
-    setError('')
+    if (!name.trim()) return
+
+    let brand, drinkName, flavor, productId
+    if (item && name === originalLabel) {
+      // Unchanged from what editing started with — keep the item's
+      // existing structured fields rather than re-deriving from the string.
+      brand = item.brand
+      drinkName = item.drink_name
+      flavor = item.flavor
+      productId = item.product_id
+    } else if (selectedProduct && name === formatDrinkLabel(selectedProduct)) {
+      brand = selectedProduct.brand
+      drinkName = selectedProduct.drink_name
+      flavor = selectedProduct.flavor
+      productId = selectedProduct.id ?? null
+    } else {
+      // Free-typed, no catalog match — same as any other null-brand row,
+      // this item just won't participate in variant grouping.
+      brand = null
+      drinkName = name.trim()
+      flavor = null
+      productId = null
+    }
+
     onSave({
-      brand: brand.trim(),
-      drink_name: drinkName.trim(),
-      flavor: flavor.trim() || null,
+      brand,
+      drink_name: drinkName,
+      flavor,
+      product_id: productId,
       type,
       quantity: Number(qty),
       unit,
@@ -158,7 +181,7 @@ export function ItemModal({ item, onSave, onClose, packSizes = {}, frequentDrink
             <div className="flex flex-wrap gap-1.5">
               {frequentDrinks.map((row, i) => (
                 <PillButton key={i} onClick={() => selectFrequent(row)}>
-                  {[row.brand, row.drink_name, row.flavor].filter(Boolean).join(' ')}
+                  {formatDrinkLabel(row)}
                 </PillButton>
               ))}
             </div>
@@ -166,33 +189,23 @@ export function ItemModal({ item, onSave, onClose, packSizes = {}, frequentDrink
         )}
 
         <div>
-          <FieldLabel>brand</FieldLabel>
-          <Input
-            value={brand}
-            autoFocus
-            autoComplete="off"
-            onChange={e => setBrand(e.target.value)}
-            placeholder="e.g. Modelo"
-          />
-        </div>
-
-        <div>
-          <FieldLabel>drink name</FieldLabel>
+          <FieldLabel>what are you adding?</FieldLabel>
           <div className="relative">
             <Input
-              value={drinkName}
+              value={name}
+              autoFocus
               autoComplete="off"
               onChange={e => handleNameChange(e.target.value)}
               onKeyDown={handleNameKeyDown}
-              onFocus={() => drinkName.trim().length >= 1 && suggestions.length > 0 && setShowSuggestions(true)}
+              onFocus={() => name.trim().length >= 1 && suggestions.length > 0 && setShowSuggestions(true)}
               onBlur={handleNameBlur}
-              placeholder="e.g. Especial"
+              placeholder="e.g. White Claw Black Cherry"
             />
             {showSuggestions && (
               <div className="absolute inset-x-0 top-full z-20 mt-1 overflow-hidden rounded-lg border border-input bg-popover shadow-lg">
                 {suggestions.map((p, i) => (
                   <div
-                    key={p.name}
+                    key={p.id}
                     className={cn(
                       'flex cursor-pointer items-center justify-between gap-2 px-3 py-2 text-[13px] transition-colors',
                       i === activeSuggestion ? 'bg-secondary' : 'bg-transparent'
@@ -200,25 +213,15 @@ export function ItemModal({ item, onSave, onClose, packSizes = {}, frequentDrink
                     onMouseDown={() => selectSuggestion(p)}
                     onMouseEnter={() => setActiveSuggestion(i)}
                   >
-                    <span>{p.name}</span>
+                    <span>{formatDrinkLabel(p)}</span>
                     <span className="font-mono text-[10px] whitespace-nowrap text-muted-foreground">
-                      {p.type} · {p.defaultUnit} · {p.defaultSize}
+                      {p.type} · {p.default_unit} · {p.default_size}
                     </span>
                   </div>
                 ))}
               </div>
             )}
           </div>
-        </div>
-
-        <div>
-          <FieldLabel>flavor (optional)</FieldLabel>
-          <Input
-            value={flavor}
-            autoComplete="off"
-            onChange={e => setFlavor(e.target.value)}
-            placeholder="e.g. Black Cherry"
-          />
         </div>
 
         <div>
@@ -280,8 +283,6 @@ export function ItemModal({ item, onSave, onClose, packSizes = {}, frequentDrink
             </div>
           )}
         </div>
-
-        {error && <p className="text-xs text-destructive">{error}</p>}
 
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>cancel</Button>
