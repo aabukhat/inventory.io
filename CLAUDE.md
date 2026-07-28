@@ -11,7 +11,25 @@ npm run preview            # preview the production build locally
 npm run generate-products  # regenerate the liquor rows in the `products` table; writes a reviewable liquor-regen-seed.sql, doesn't touch the DB itself
 ```
 
-There is no test suite and no linter/formatter configured in this repo — don't invent `npm test`/`npm run lint` commands or assume CI runs them. The production build currently emits a ">500kB chunk" warning; that's pre-existing (unsplit vendor bundle), not a regression to chase unless asked.
+There is no linter/formatter configured in this repo — don't invent `npm run lint` commands. The production build currently emits a ">500kB chunk" warning; that's pre-existing (unsplit vendor bundle), not a regression to chase unless asked.
+
+### Regression test suite
+
+Three layers, all under `tests/` except unit tests (colocated `src/lib/*.test.js` next to the source file, Vitest's own idiom):
+
+```bash
+npm run test:unit    # Vitest, src/lib/*.test.js — pure logic, jsdom, no live services needed
+npm run db:start      # supabase start + regenerate .env.test.local from its actual local keys/ports
+npm run test:db       # tests/db/*.test.js — resets the local DB, then drives real lib/*.js calls
+                       # against it as real signed-in users (RLS + RPC + trigger all exercised
+                       # together — this is what catches client/server permission mismatches like
+                       # the historical contributor-quantity trigger bug, not a mocked-DB unit test)
+npm run test:e2e      # Playwright, tests/e2e/*.spec.js — builds+previews the app, drives the real UI
+npm run test:all      # all three in sequence: db:start -> test:unit -> test:db -> test:e2e
+npm run db:stop        # tear down the local Supabase stack when done
+```
+
+DB and E2E tests require Docker (for `supabase start`) and create their own throwaway users/inventories per test via `tests/db/helpers/*.js` / `tests/e2e/fixtures/testData.js` — there's no static seed data (`supabase/seed.sql` is intentionally empty). `tests/db/helpers/asUser.js`'s session-swap pattern (swap the shared `supabase` singleton's active session, then call the real `lib/*.js` function) is how DB tests impersonate different roles — `lib/*.js` functions close over that one singleton rather than accepting an injectable client, so this is the only way to exercise the real app code path as multiple users. `.github/workflows/regression.yml` runs all three layers on PRs to `main` and on pushes to `1.0---beta`, entirely against a fresh local Supabase stack (no secrets, no hosted test project).
 
 **Git workflow:** do new work on a branch, not directly on `main` — every push to `main` triggers a Netlify production deploy, and the user is on a plan with a small number of prod deploys allowed per month. Local commits on a branch are fine to make freely without asking; confirm before pushing to `main` or merging a branch into it, since that's the deploy-triggering, harder-to-undo step. Current work-in-progress branch: `1.0---beta`.
 
