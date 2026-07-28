@@ -6,8 +6,13 @@
 
 /* Reserve the vertical scrollbar's gutter unconditionally so switching
    between a tall and a short inventory (which toggles whether a scrollbar
-   is needed at all) never shifts the whole page laterally. */
+   is needed at all) never shifts the whole page laterally.
+   scrollbar-gutter only has an effect on a box whose overflow is auto/scroll
+   (not the default visible) — html scrolls regardless via the browser's
+   viewport special-casing, but that doesn't change its computed overflow,
+   so scrollbar-gutter alone was silently a no-op without this. */
 html {
+  overflow-y: auto;
   scrollbar-gutter: stable;
 }
 
